@@ -45,7 +45,6 @@ import java.util.Map;
  * @author <a href="mailto:rhauch@gmail.com">Randall Hauch</a>
  */
 public enum ValueType {
-
     SMALL_DOCUMENT(0x00),
     LARGE_DOCUMENT(0x01),
     SMALL_ARRAY(0x02),
@@ -63,16 +62,10 @@ public enum ValueType {
 
     private final int code;
 
-    ValueType(int code) {
-        this.code = code;
-    }
-
-    public int getCode() {
-        return this.code;
-    }
+    ValueType(int code) { this.code = code; }
+    public int getCode() { return this.code; }
 
     private static final Map<Integer, ValueType> TYPE_BY_CODE;
-
     static {
         TYPE_BY_CODE = new HashMap<Integer, ValueType>();
         for (ValueType type : values()) {
@@ -80,8 +73,5 @@ public enum ValueType {
         }
     }
 
-    public static ValueType byCode(int code) {
-        return TYPE_BY_CODE.get(code);
-    }
-
+    public static ValueType byCode(int code) { return TYPE_BY_CODE.get(code); }
 }

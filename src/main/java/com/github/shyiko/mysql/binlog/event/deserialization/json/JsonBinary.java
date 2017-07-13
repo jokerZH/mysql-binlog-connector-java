@@ -151,7 +151,6 @@ import java.nio.charset.Charset;
  * @author <a href="mailto:rhauch@gmail.com">Randall Hauch</a>
  */
 public class JsonBinary {
-
     private static final Charset UTF_8 = Charset.forName("UTF-8");
 
     /**
@@ -250,8 +249,7 @@ public class JsonBinary {
                 parseOpaque(formatter);
                 break;
             default:
-                throw new IOException("Unknown type value '" + asHex(type.getCode()) +
-                    "' in first byte of a JSON value");
+                throw new IOException("Unknown type value '" + asHex(type.getCode()) + "' in first byte of a JSON value");
         }
     }
 
@@ -317,8 +315,7 @@ public class JsonBinary {
      * @param formatter the formatter to be notified of the parsed value; may not be null
      * @throws IOException if there is a problem reading the JSON value
      */
-    protected void parseObject(boolean small, JsonFormatter formatter)
-            throws IOException {
+    protected void parseObject(boolean small, JsonFormatter formatter) throws IOException {
         // Read the header ...
         int numElements = readUnsignedIndex(Integer.MAX_VALUE, small, "number of elements in");
         int numBytes = readUnsignedIndex(Integer.MAX_VALUE, small, "size of");
@@ -461,8 +458,7 @@ public class JsonBinary {
      * @throws IOException if there is a problem reading the JSON value
      */
     // checkstyle, please ignore MethodLength for the next line
-    protected void parseArray(boolean small, JsonFormatter formatter)
-            throws IOException {
+    protected void parseArray(boolean small, JsonFormatter formatter) throws IOException {
         // Read the header ...
         int numElements = readUnsignedIndex(Integer.MAX_VALUE, small, "number of elements in");
         int numBytes = readUnsignedIndex(Integer.MAX_VALUE, small, "size of");
