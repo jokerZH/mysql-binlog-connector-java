@@ -15,6 +15,7 @@
  */
 package com.github.shyiko.mysql.binlog.event;
 
+import com.github.shyiko.mysql.binlog.model.type.EventType;
 import org.testng.annotations.Test;
 
 import java.util.Arrays;

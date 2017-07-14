@@ -18,55 +18,37 @@ package com.github.shyiko.mysql.binlog.io;
 import java.io.IOException;
 import java.io.OutputStream;
 
-/**
- * @author <a href="mailto:stanley.shyiko@gmail.com">Stanley Shyiko</a>
- */
+/* TODO */
 public class ByteArrayOutputStream extends OutputStream {
-
     private OutputStream outputStream;
 
-    public ByteArrayOutputStream() {
-        this(new java.io.ByteArrayOutputStream());
-    }
+    public ByteArrayOutputStream() { this(new java.io.ByteArrayOutputStream()); }
+    public ByteArrayOutputStream(OutputStream outputStream) { this.outputStream = outputStream; }
 
-    public ByteArrayOutputStream(OutputStream outputStream) {
-        this.outputStream = outputStream;
-    }
-
-    /**
-     * Write int in little-endian format.
-     */
+    /* Write int in little-endian format. */
     public void writeInteger(int value, int length) throws IOException {
         for (int i = 0; i < length; i++) {
             write(0x000000FF & (value >>> (i << 3)));
         }
     }
 
-    /**
-     * Write long in little-endian format.
-     */
+    /* Write long in little-endian format. */
     public void writeLong(long value, int length) throws IOException {
         for (int i = 0; i < length; i++) {
             write((int) (0x00000000000000FF & (value >>> (i << 3))));
         }
     }
 
-    public void writeString(String value) throws IOException {
-        write(value.getBytes());
-    }
+    public void writeString(String value) throws IOException { write(value.getBytes()); }
 
-    /**
-     * @see ByteArrayInputStream#readZeroTerminatedString()
-     */
+    /* 写以0结束的字符串 */
     public void writeZeroTerminatedString(String value) throws IOException {
         write(value.getBytes());
         write(0);
     }
 
     @Override
-    public void write(int b) throws IOException {
-        outputStream.write(b);
-    }
+    public void write(int b) throws IOException { outputStream.write(b); }
 
     public byte[] toByteArray() {
         // todo: whole approach feels wrong
@@ -85,6 +67,5 @@ public class ByteArrayOutputStream extends OutputStream {
     public void close() throws IOException {
         outputStream.close();
     }
-
 }
 

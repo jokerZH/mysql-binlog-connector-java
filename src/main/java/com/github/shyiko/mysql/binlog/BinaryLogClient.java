@@ -15,19 +15,19 @@
  */
 package com.github.shyiko.mysql.binlog;
 
-import com.github.shyiko.mysql.binlog.event.Event;
-import com.github.shyiko.mysql.binlog.event.EventData;
-import com.github.shyiko.mysql.binlog.event.EventHeader;
-import com.github.shyiko.mysql.binlog.event.EventHeaderV4;
-import com.github.shyiko.mysql.binlog.event.EventType;
-import com.github.shyiko.mysql.binlog.event.GtidEventData;
-import com.github.shyiko.mysql.binlog.event.RotateEventData;
-import com.github.shyiko.mysql.binlog.event.deserialization.ChecksumType;
-import com.github.shyiko.mysql.binlog.event.deserialization.EventDataDeserializationException;
-import com.github.shyiko.mysql.binlog.event.deserialization.EventDataDeserializer;
-import com.github.shyiko.mysql.binlog.event.deserialization.EventDeserializer;
-import com.github.shyiko.mysql.binlog.event.deserialization.GtidEventDataDeserializer;
-import com.github.shyiko.mysql.binlog.event.deserialization.RotateEventDataDeserializer;
+import com.github.shyiko.mysql.binlog.model.event.Event;
+import com.github.shyiko.mysql.binlog.model.event.EventData;
+import com.github.shyiko.mysql.binlog.model.event.EventHeader;
+import com.github.shyiko.mysql.binlog.model.event.EventHeaderV4;
+import com.github.shyiko.mysql.binlog.model.type.EventType;
+import com.github.shyiko.mysql.binlog.model.data.GtidEventData;
+import com.github.shyiko.mysql.binlog.model.data.RotateEventData;
+import com.github.shyiko.mysql.binlog.model.type.ChecksumType;
+import com.github.shyiko.mysql.binlog.exception.EventDataDeserializationException;
+import com.github.shyiko.mysql.binlog.deserialization.EventDataDeserializer;
+import com.github.shyiko.mysql.binlog.deserialization.EventDeserializer;
+import com.github.shyiko.mysql.binlog.deserialization.GtidEventDataDeserializer;
+import com.github.shyiko.mysql.binlog.deserialization.RotateEventDataDeserializer;
 import com.github.shyiko.mysql.binlog.io.ByteArrayInputStream;
 import com.github.shyiko.mysql.binlog.jmx.BinaryLogClientMXBean;
 import com.github.shyiko.mysql.binlog.network.AuthenticationException;

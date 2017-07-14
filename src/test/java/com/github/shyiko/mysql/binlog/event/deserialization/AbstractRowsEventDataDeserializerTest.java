@@ -15,7 +15,7 @@
  */
 package com.github.shyiko.mysql.binlog.event.deserialization;
 
-import com.github.shyiko.mysql.binlog.event.deserialization.AbstractRowsEventDataDeserializer.UnixTime;
+import com.github.shyiko.mysql.binlog.deserialization.AbstractRowsEventDataDeserializer.UnixTime;
 import org.testng.annotations.Test;
 
 import java.util.Calendar;

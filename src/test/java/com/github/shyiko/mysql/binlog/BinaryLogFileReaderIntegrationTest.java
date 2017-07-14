@@ -15,12 +15,12 @@
  */
 package com.github.shyiko.mysql.binlog;
 
-import com.github.shyiko.mysql.binlog.event.ByteArrayEventData;
-import com.github.shyiko.mysql.binlog.event.Event;
-import com.github.shyiko.mysql.binlog.event.EventType;
-import com.github.shyiko.mysql.binlog.event.deserialization.ByteArrayEventDataDeserializer;
-import com.github.shyiko.mysql.binlog.event.deserialization.EventDeserializer;
-import com.github.shyiko.mysql.binlog.event.deserialization.NullEventDataDeserializer;
+import com.github.shyiko.mysql.binlog.model.data.ByteArrayEventData;
+import com.github.shyiko.mysql.binlog.model.event.Event;
+import com.github.shyiko.mysql.binlog.model.type.EventType;
+import com.github.shyiko.mysql.binlog.deserialization.ByteArrayEventDataDeserializer;
+import com.github.shyiko.mysql.binlog.deserialization.EventDeserializer;
+import com.github.shyiko.mysql.binlog.deserialization.NullEventDataDeserializer;
 import org.testng.annotations.Test;
 
 import java.io.File;

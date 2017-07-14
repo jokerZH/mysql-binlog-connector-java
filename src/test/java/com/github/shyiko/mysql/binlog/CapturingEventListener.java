@@ -15,8 +15,8 @@
  */
 package com.github.shyiko.mysql.binlog;
 
-import com.github.shyiko.mysql.binlog.event.Event;
-import com.github.shyiko.mysql.binlog.event.EventData;
+import com.github.shyiko.mysql.binlog.model.event.Event;
+import com.github.shyiko.mysql.binlog.model.event.EventData;
 
 import java.util.ArrayList;
 import java.util.LinkedList;

@@ -19,9 +19,10 @@ import static junit.framework.Assert.assertEquals;
 
 import java.io.IOException;
 
+import com.github.shyiko.mysql.binlog.deserialization.PreviousGtidSetDeserializer;
 import org.junit.Test;
 
-import com.github.shyiko.mysql.binlog.event.PreviousGtidSetEventData;
+import com.github.shyiko.mysql.binlog.model.data.PreviousGtidSetEventData;
 import com.github.shyiko.mysql.binlog.io.ByteArrayInputStream;
 
 /**

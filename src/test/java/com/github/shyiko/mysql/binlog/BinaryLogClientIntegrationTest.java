@@ -15,20 +15,20 @@
  */
 package com.github.shyiko.mysql.binlog;
 
-import com.github.shyiko.mysql.binlog.event.ByteArrayEventData;
-import com.github.shyiko.mysql.binlog.event.DeleteRowsEventData;
-import com.github.shyiko.mysql.binlog.event.Event;
-import com.github.shyiko.mysql.binlog.event.EventData;
-import com.github.shyiko.mysql.binlog.event.EventHeaderV4;
-import com.github.shyiko.mysql.binlog.event.EventType;
-import com.github.shyiko.mysql.binlog.event.QueryEventData;
-import com.github.shyiko.mysql.binlog.event.UpdateRowsEventData;
-import com.github.shyiko.mysql.binlog.event.WriteRowsEventData;
-import com.github.shyiko.mysql.binlog.event.deserialization.ByteArrayEventDataDeserializer;
-import com.github.shyiko.mysql.binlog.event.deserialization.EventDataDeserializationException;
-import com.github.shyiko.mysql.binlog.event.deserialization.EventDeserializer;
-import com.github.shyiko.mysql.binlog.event.deserialization.EventHeaderV4Deserializer;
-import com.github.shyiko.mysql.binlog.event.deserialization.QueryEventDataDeserializer;
+import com.github.shyiko.mysql.binlog.model.data.ByteArrayEventData;
+import com.github.shyiko.mysql.binlog.model.data.DeleteRowsEventData;
+import com.github.shyiko.mysql.binlog.model.event.Event;
+import com.github.shyiko.mysql.binlog.model.event.EventData;
+import com.github.shyiko.mysql.binlog.model.event.EventHeaderV4;
+import com.github.shyiko.mysql.binlog.model.type.EventType;
+import com.github.shyiko.mysql.binlog.model.data.QueryEventData;
+import com.github.shyiko.mysql.binlog.model.data.UpdateRowsEventData;
+import com.github.shyiko.mysql.binlog.model.data.WriteRowsEventData;
+import com.github.shyiko.mysql.binlog.deserialization.ByteArrayEventDataDeserializer;
+import com.github.shyiko.mysql.binlog.exception.EventDataDeserializationException;
+import com.github.shyiko.mysql.binlog.deserialization.EventDeserializer;
+import com.github.shyiko.mysql.binlog.deserialization.EventHeaderV4Deserializer;
+import com.github.shyiko.mysql.binlog.deserialization.QueryEventDataDeserializer;
 import com.github.shyiko.mysql.binlog.io.BufferedSocketInputStream;
 import com.github.shyiko.mysql.binlog.io.ByteArrayInputStream;
 import com.github.shyiko.mysql.binlog.network.AuthenticationException;
@@ -78,7 +78,7 @@ import java.util.concurrent.locks.ReentrantLock;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
-import static com.github.shyiko.mysql.binlog.event.deserialization.EventDeserializer.CompatibilityMode;
+import static com.github.shyiko.mysql.binlog.deserialization.EventDeserializer.CompatibilityMode;
 import static org.mockito.Matchers.any;
 import static org.mockito.Matchers.eq;
 import static org.mockito.Mockito.inOrder;

@@ -1,5 +1,5 @@
 /*
- * Copyright 2013 Stanley Shyiko
+ * Copyright 2017 Juan Olivares
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -13,24 +13,28 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package com.github.shyiko.mysql.binlog;
+package com.github.shyiko.mysql.binlog.model.data;
 
-import com.github.shyiko.mysql.binlog.model.event.Event;
-
-import java.util.logging.Level;
-import java.util.logging.Logger;
+import com.github.shyiko.mysql.binlog.model.event.EventData;
 
 /**
- * @author <a href="mailto:stanley.shyiko@gmail.com">Stanley Shyiko</a>
+ * @author <a href="https://github.com/jolivares">Juan Olivares</a>
  */
-public class TraceEventListener implements BinaryLogClient.EventListener {
+public class PreviousGtidSetEventData implements EventData {
 
-    private final Logger logger = Logger.getLogger(getClass().getSimpleName());
+    private final String gtidSet;
+
+    public PreviousGtidSetEventData(String gtidSet) {
+        this.gtidSet = gtidSet;
+    }
+
+    public String getGtidSet() {
+        return gtidSet;
+    }
 
     @Override
-    public void onEvent(Event event) {
-        if (logger.isLoggable(Level.INFO)) {
-            logger.log(Level.INFO, "Received " + event);
-        }
+    public String toString() {
+        return "PreviousGtidSetEventData {gtidSet='" + gtidSet + "'}";
     }
+
 }

@@ -13,24 +13,20 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package com.github.shyiko.mysql.binlog;
-
-import com.github.shyiko.mysql.binlog.model.event.Event;
-
-import java.util.logging.Level;
-import java.util.logging.Logger;
+package com.github.shyiko.mysql.binlog.model.type;
 
 /**
+ * @see
+ * <a href="https://dev.mysql.com/doc/refman/5.6/en/replication-options-binary-log.html#option_mysqld_binlog-checksum">
+ *     MySQL --binlog-checksum option
+ * </a>
  * @author <a href="mailto:stanley.shyiko@gmail.com">Stanley Shyiko</a>
  */
-public class TraceEventListener implements BinaryLogClient.EventListener {
+public enum ChecksumType {
+    NONE(0), CRC32(4);
 
-    private final Logger logger = Logger.getLogger(getClass().getSimpleName());
+    private int length;
 
-    @Override
-    public void onEvent(Event event) {
-        if (logger.isLoggable(Level.INFO)) {
-            logger.log(Level.INFO, "Received " + event);
-        }
-    }
+    private ChecksumType(int length) { this.length = length; }
+    public int getLength() { return length; }
 }

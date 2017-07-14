@@ -19,19 +19,13 @@ import java.io.FilterInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 
-/**
- * @author <a href="mailto:stanley.shyiko@gmail.com">Stanley Shyiko</a>
- */
+/* 从in中读物limit长度的数据到buffer，然后慢慢处理 */
 public class BufferedSocketInputStream extends FilterInputStream {
-
     private byte[] buffer;
     private int offset;
     private int limit;
 
-    public BufferedSocketInputStream(InputStream in) {
-        this(in, 512 * 1024);
-    }
-
+    public BufferedSocketInputStream(InputStream in) { this(in, 512 * 1024); }
     public BufferedSocketInputStream(InputStream in, int bufferSize) {
         super(in);
         this.buffer = new byte[bufferSize];

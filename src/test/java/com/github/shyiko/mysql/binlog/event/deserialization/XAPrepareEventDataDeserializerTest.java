@@ -15,7 +15,8 @@
  */
 package com.github.shyiko.mysql.binlog.event.deserialization;
 
-import com.github.shyiko.mysql.binlog.event.XAPrepareEventData;
+import com.github.shyiko.mysql.binlog.deserialization.XAPrepareEventDataDeserializer;
+import com.github.shyiko.mysql.binlog.model.data.XAPrepareEventData;
 import com.github.shyiko.mysql.binlog.io.ByteArrayInputStream;
 import org.testng.annotations.Test;
 

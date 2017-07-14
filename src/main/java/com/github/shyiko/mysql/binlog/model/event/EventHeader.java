@@ -13,24 +13,20 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package com.github.shyiko.mysql.binlog;
+package com.github.shyiko.mysql.binlog.model.event;
 
-import com.github.shyiko.mysql.binlog.model.event.Event;
+import com.github.shyiko.mysql.binlog.model.type.EventType;
 
-import java.util.logging.Level;
-import java.util.logging.Logger;
+import java.io.Serializable;
 
 /**
  * @author <a href="mailto:stanley.shyiko@gmail.com">Stanley Shyiko</a>
  */
-public class TraceEventListener implements BinaryLogClient.EventListener {
+public interface EventHeader extends Serializable {
 
-    private final Logger logger = Logger.getLogger(getClass().getSimpleName());
-
-    @Override
-    public void onEvent(Event event) {
-        if (logger.isLoggable(Level.INFO)) {
-            logger.log(Level.INFO, "Received " + event);
-        }
-    }
+    long getTimestamp();
+    EventType getEventType();
+    long getServerId();
+    long getHeaderLength();
+    long getDataLength();
 }
