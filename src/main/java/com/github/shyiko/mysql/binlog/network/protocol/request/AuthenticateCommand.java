@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package com.github.shyiko.mysql.binlog.network.protocol.command;
+package com.github.shyiko.mysql.binlog.network.protocol.request;
 
 import com.github.shyiko.mysql.binlog.io.ByteArrayOutputStream;
 import com.github.shyiko.mysql.binlog.network.ClientCapabilities;
@@ -22,15 +22,12 @@ import java.io.IOException;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 
-/**
- * @author <a href="mailto:stanley.shyiko@gmail.com">Stanley Shyiko</a>
- */
+/* 发送给服务端的权限验证数据包 */
 public class AuthenticateCommand implements Command {
-
     private String schema;
     private String username;
     private String password;
-    private String salt;
+    private String salt;    // 密码加密的需要
     private int clientCapabilities;
     private int collation;
 
@@ -41,13 +38,8 @@ public class AuthenticateCommand implements Command {
         this.salt = salt;
     }
 
-    public void setClientCapabilities(int clientCapabilities) {
-        this.clientCapabilities = clientCapabilities;
-    }
-
-    public void setCollation(int collation) {
-        this.collation = collation;
-    }
+    public void setClientCapabilities(int clientCapabilities) { this.clientCapabilities = clientCapabilities; }
+    public void setCollation(int collation) { this.collation = collation; }
 
     @Override
     public byte[] toByteArray() throws IOException {
@@ -55,11 +47,14 @@ public class AuthenticateCommand implements Command {
         int clientCapabilities = this.clientCapabilities;
         if (clientCapabilities == 0) {
             clientCapabilities = ClientCapabilities.LONG_FLAG |
-                    ClientCapabilities.PROTOCOL_41 | ClientCapabilities.SECURE_CONNECTION;
+                                 ClientCapabilities.PROTOCOL_41 |
+                                 ClientCapabilities.SECURE_CONNECTION;
+
             if (schema != null) {
                 clientCapabilities |= ClientCapabilities.CONNECT_WITH_DB;
             }
         }
+
         buffer.writeInteger(clientCapabilities, 4);
         buffer.writeInteger(0, 4); // maximum packet length
         buffer.writeInteger(collation, 1);
@@ -76,9 +71,7 @@ public class AuthenticateCommand implements Command {
         return buffer.toByteArray();
     }
 
-    /**
-     * see mysql/sql/password.c scramble(...)
-     */
+    /** see mysql/sql/password.c scramble(...)   对数据压缩 */
     private static byte[] passwordCompatibleWithMySQL411(String password, String salt) {
         MessageDigest sha;
         try {

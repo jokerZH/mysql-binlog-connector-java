@@ -13,28 +13,31 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package com.github.shyiko.mysql.binlog.network.protocol.command;
+package com.github.shyiko.mysql.binlog.network.protocol.request;
 
 import com.github.shyiko.mysql.binlog.io.ByteArrayOutputStream;
 
 import java.io.IOException;
 
-/**
- * @author <a href="mailto:stanley.shyiko@gmail.com">Stanley Shyiko</a>
- */
-public class QueryCommand implements Command {
+public class DumpBinaryLogCommand implements Command {
+    private long serverId;
+    private String binlogFilename;
+    private long binlogPosition;
 
-    private String sql;
-
-    public QueryCommand(String sql) {
-        this.sql = sql;
+    public DumpBinaryLogCommand(long serverId, String binlogFilename, long binlogPosition) {
+        this.serverId = serverId;
+        this.binlogFilename = binlogFilename;
+        this.binlogPosition = binlogPosition;
     }
 
     @Override
     public byte[] toByteArray() throws IOException {
         ByteArrayOutputStream buffer = new ByteArrayOutputStream();
-        buffer.writeInteger(CommandType.QUERY.ordinal(), 1);
-        buffer.writeString(this.sql);
+        buffer.writeInteger(CommandType.BINLOG_DUMP.ordinal(), 1);
+        buffer.writeLong(this.binlogPosition, 4);
+        buffer.writeInteger(0, 2); // flag
+        buffer.writeLong(this.serverId, 4);
+        buffer.writeString(this.binlogFilename);
         return buffer.toByteArray();
     }
 

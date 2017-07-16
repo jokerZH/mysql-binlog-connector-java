@@ -13,22 +13,18 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package com.github.shyiko.mysql.binlog.network.protocol.command;
-
-import com.github.shyiko.mysql.binlog.io.ByteArrayOutputStream;
-
-import java.io.IOException;
+package com.github.shyiko.mysql.binlog.exception;
 
 /**
  * @author <a href="mailto:stanley.shyiko@gmail.com">Stanley Shyiko</a>
  */
-public class PingCommand implements Command {
+public class AuthenticationException extends ServerException {
 
-    @Override
-    public byte[] toByteArray() throws IOException {
-        ByteArrayOutputStream buffer = new ByteArrayOutputStream();
-        buffer.writeInteger(CommandType.PING.ordinal(), 1);
-        return buffer.toByteArray();
+    public AuthenticationException(String message, int errorCode, String sqlState) {
+        super(message, errorCode, sqlState);
     }
 
+    public AuthenticationException(String message) {
+        super(message, 0, "HY000");
+    }
 }

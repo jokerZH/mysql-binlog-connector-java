@@ -1,5 +1,5 @@
 /*
- * Copyright 2013 Stanley Shyiko
+ * Copyright 2016 Stanley Shyiko
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -13,17 +13,17 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package com.github.shyiko.mysql.binlog.network.protocol.command;
+package com.github.shyiko.mysql.binlog.exception;
 
-import com.github.shyiko.mysql.binlog.network.protocol.Packet;
-
-import java.io.IOException;
+import javax.net.ssl.SSLException;
 
 /**
  * @author <a href="mailto:stanley.shyiko@gmail.com">Stanley Shyiko</a>
  */
-public interface Command extends Packet {
+public class IdentityVerificationException extends SSLException {
 
-    byte[] toByteArray() throws IOException;
+    public IdentityVerificationException(String message) {
+        super(message);
+    }
 
 }

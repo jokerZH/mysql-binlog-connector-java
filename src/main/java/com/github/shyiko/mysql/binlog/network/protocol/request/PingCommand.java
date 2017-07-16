@@ -1,5 +1,5 @@
 /*
- * Copyright 2016 Stanley Shyiko
+ * Copyright 2013 Stanley Shyiko
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -13,16 +13,22 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package com.github.shyiko.mysql.binlog.network;
+package com.github.shyiko.mysql.binlog.network.protocol.request;
 
-import javax.net.ssl.SSLSocket;
-import java.net.Socket;
-import java.net.SocketException;
+import com.github.shyiko.mysql.binlog.io.ByteArrayOutputStream;
+
+import java.io.IOException;
 
 /**
  * @author <a href="mailto:stanley.shyiko@gmail.com">Stanley Shyiko</a>
  */
-public interface SSLSocketFactory {
+public class PingCommand implements Command {
 
-    SSLSocket createSocket(Socket socket) throws SocketException;
+    @Override
+    public byte[] toByteArray() throws IOException {
+        ByteArrayOutputStream buffer = new ByteArrayOutputStream();
+        buffer.writeInteger(CommandType.PING.ordinal(), 1);
+        return buffer.toByteArray();
+    }
+
 }

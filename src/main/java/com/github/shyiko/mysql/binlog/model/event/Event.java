@@ -21,7 +21,6 @@ import java.io.Serializable;
  * @author <a href="mailto:stanley.shyiko@gmail.com">Stanley Shyiko</a>
  */
 public class Event implements Serializable {
-
     private EventHeader header;
     private EventData data;
 

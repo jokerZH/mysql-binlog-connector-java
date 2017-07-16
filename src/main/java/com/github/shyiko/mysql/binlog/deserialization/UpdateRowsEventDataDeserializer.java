@@ -27,21 +27,12 @@ import java.util.BitSet;
 import java.util.List;
 import java.util.Map;
 
-/**
- * @author <a href="mailto:stanley.shyiko@gmail.com">Stanley Shyiko</a>
- */
+/*  */
 public class UpdateRowsEventDataDeserializer extends AbstractRowsEventDataDeserializer<UpdateRowsEventData> {
-
     private boolean mayContainExtraInformation;
 
-    public UpdateRowsEventDataDeserializer(Map<Long, TableMapEventData> tableMapEventByTableId) {
-        super(tableMapEventByTableId);
-    }
-
-    public UpdateRowsEventDataDeserializer setMayContainExtraInformation(boolean mayContainExtraInformation) {
-        this.mayContainExtraInformation = mayContainExtraInformation;
-        return this;
-    }
+    public UpdateRowsEventDataDeserializer(Map<Long, TableMapEventData> tableMapEventByTableId) { super(tableMapEventByTableId); }
+    public UpdateRowsEventDataDeserializer setMayContainExtraInformation(boolean mayContainExtraInformation) { this.mayContainExtraInformation = mayContainExtraInformation; return this; }
 
     @Override
     public UpdateRowsEventData deserialize(ByteArrayInputStream inputStream) throws IOException {
@@ -59,13 +50,12 @@ public class UpdateRowsEventDataDeserializer extends AbstractRowsEventDataDeseri
         return eventData;
     }
 
-    private List<Map.Entry<Serializable[], Serializable[]>> deserializeRows(UpdateRowsEventData eventData,
-            ByteArrayInputStream inputStream) throws IOException {
+    private List<Map.Entry<Serializable[], Serializable[]>> deserializeRows(UpdateRowsEventData eventData, ByteArrayInputStream inputStream) throws IOException {
         long tableId = eventData.getTableId();
-        BitSet includedColumnsBeforeUpdate = eventData.getIncludedColumnsBeforeUpdate(),
-               includedColumns = eventData.getIncludedColumns();
-        List<Map.Entry<Serializable[], Serializable[]>> rows =
-                new ArrayList<Map.Entry<Serializable[], Serializable[]>>();
+        BitSet includedColumnsBeforeUpdate = eventData.getIncludedColumnsBeforeUpdate();
+        BitSet includedColumns = eventData.getIncludedColumns();
+
+        List<Map.Entry<Serializable[], Serializable[]>> rows = new ArrayList<Map.Entry<Serializable[], Serializable[]>>();
         while (inputStream.available() > 0) {
             rows.add(new AbstractMap.SimpleEntry<Serializable[], Serializable[]>(
                     deserializeRow(tableId, includedColumnsBeforeUpdate, inputStream),

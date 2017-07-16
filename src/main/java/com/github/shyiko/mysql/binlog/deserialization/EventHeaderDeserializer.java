@@ -20,7 +20,7 @@ import com.github.shyiko.mysql.binlog.io.ByteArrayInputStream;
 
 import java.io.IOException;
 
-/* @param <T> event header this deserializer is responsible for */
+/* 头部解析接口 */
 public interface EventHeaderDeserializer<T extends EventHeader> {
     T deserialize(ByteArrayInputStream inputStream) throws IOException;
 }

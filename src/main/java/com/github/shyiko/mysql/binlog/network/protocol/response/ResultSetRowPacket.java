@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package com.github.shyiko.mysql.binlog.network.protocol;
+package com.github.shyiko.mysql.binlog.network.protocol.response;
 
 import com.github.shyiko.mysql.binlog.io.ByteArrayInputStream;
 
@@ -21,11 +21,8 @@ import java.io.IOException;
 import java.util.LinkedList;
 import java.util.List;
 
-/**
- * @author <a href="mailto:stanley.shyiko@gmail.com">Stanley Shyiko</a>
- */
+/* 返回的一行纪录 */
 public class ResultSetRowPacket implements Packet {
-
     private String[] values;
 
     public ResultSetRowPacket(byte[] bytes) throws IOException {
@@ -37,16 +34,7 @@ public class ResultSetRowPacket implements Packet {
         this.values = values.toArray(new String[values.size()]);
     }
 
-    public String[] getValues() {
-        return values;
-    }
-
-    public String getValue(int index) {
-        return values[index];
-    }
-
-    public int size() {
-        return values.length;
-    }
-
+    public String[] getValues() { return values; }
+    public String getValue(int index) { return values[index]; }
+    public int size() { return values.length; }
 }

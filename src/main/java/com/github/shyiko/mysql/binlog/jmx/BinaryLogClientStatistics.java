@@ -22,12 +22,7 @@ import com.github.shyiko.mysql.binlog.model.event.EventHeader;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
 
-/**
- * @author <a href="mailto:stanley.shyiko@gmail.com">Stanley Shyiko</a>
- */
-public class BinaryLogClientStatistics implements BinaryLogClientStatisticsMXBean,
-        BinaryLogClient.EventListener, BinaryLogClient.LifecycleListener {
-
+public class BinaryLogClientStatistics implements BinaryLogClientStatisticsMXBean, BinaryLogClient.EventListener, BinaryLogClient.LifecycleListener {
     private AtomicReference<EventHeader> lastEventHeader = new AtomicReference<EventHeader>();
     private AtomicLong timestampOfLastEvent = new AtomicLong();
     private AtomicLong totalNumberOfEventsSeen = new AtomicLong();
@@ -35,9 +30,7 @@ public class BinaryLogClientStatistics implements BinaryLogClientStatisticsMXBea
     private AtomicLong numberOfSkippedEvents = new AtomicLong();
     private AtomicLong numberOfDisconnects = new AtomicLong();
 
-    public BinaryLogClientStatistics() {
-    }
-
+    public BinaryLogClientStatistics() { }
     public BinaryLogClientStatistics(BinaryLogClient binaryLogClient) {
         binaryLogClient.registerEventListener(this);
         binaryLogClient.registerLifecycleListener(this);
@@ -46,8 +39,7 @@ public class BinaryLogClientStatistics implements BinaryLogClientStatisticsMXBea
     @Override
     public String getLastEvent() {
         EventHeader eventHeader = lastEventHeader.get();
-        return eventHeader == null ? null : eventHeader.getEventType() + "/" + eventHeader.getTimestamp() +
-                " from server " + eventHeader.getServerId();
+        return eventHeader == null ? null : eventHeader.getEventType() + "/" + eventHeader.getTimestamp() + " from server " + eventHeader.getServerId();
     }
 
     @Override
@@ -69,24 +61,13 @@ public class BinaryLogClientStatistics implements BinaryLogClientStatisticsMXBea
     }
 
     @Override
-    public long getTotalNumberOfEventsSeen() {
-        return totalNumberOfEventsSeen.get();
-    }
-
+    public long getTotalNumberOfEventsSeen() { return totalNumberOfEventsSeen.get(); }
     @Override
-    public long getTotalBytesReceived() {
-        return totalBytesReceived.get();
-    }
-
+    public long getTotalBytesReceived() { return totalBytesReceived.get(); }
     @Override
-    public long getNumberOfSkippedEvents() {
-        return numberOfSkippedEvents.get();
-    }
-
+    public long getNumberOfSkippedEvents() { return numberOfSkippedEvents.get(); }
     @Override
-    public long getNumberOfDisconnects() {
-        return numberOfDisconnects.get();
-    }
+    public long getNumberOfDisconnects() { return numberOfDisconnects.get(); }
 
     @Override
     public void reset() {
@@ -116,20 +97,10 @@ public class BinaryLogClientStatistics implements BinaryLogClientStatisticsMXBea
     }
 
     @Override
-    public void onDisconnect(BinaryLogClient client) {
-        numberOfDisconnects.getAndIncrement();
-    }
-
+    public void onDisconnect(BinaryLogClient client) { numberOfDisconnects.getAndIncrement(); }
     @Override
-    public void onConnect(BinaryLogClient client) {
-    }
-
+    public void onConnect(BinaryLogClient client) { }
     @Override
-    public void onCommunicationFailure(BinaryLogClient client, Exception ex) {
-    }
-
-    protected long getCurrentTimeMillis() {
-        return System.currentTimeMillis();
-    }
-
+    public void onCommunicationFailure(BinaryLogClient client, Exception ex) { }
+    protected long getCurrentTimeMillis() { return System.currentTimeMillis(); }
 }

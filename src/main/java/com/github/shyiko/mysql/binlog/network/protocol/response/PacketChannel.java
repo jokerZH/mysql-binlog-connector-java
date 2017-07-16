@@ -13,14 +13,14 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package com.github.shyiko.mysql.binlog.network.protocol;
+package com.github.shyiko.mysql.binlog.network.protocol.response;
 
 import com.github.shyiko.mysql.binlog.io.BufferedSocketInputStream;
 import com.github.shyiko.mysql.binlog.io.ByteArrayInputStream;
 import com.github.shyiko.mysql.binlog.io.ByteArrayOutputStream;
-import com.github.shyiko.mysql.binlog.network.IdentityVerificationException;
-import com.github.shyiko.mysql.binlog.network.SSLSocketFactory;
-import com.github.shyiko.mysql.binlog.network.protocol.command.Command;
+import com.github.shyiko.mysql.binlog.exception.IdentityVerificationException;
+import com.github.shyiko.mysql.binlog.network.ssl.SSLSocketFactory;
+import com.github.shyiko.mysql.binlog.network.protocol.request.Command;
 
 import javax.net.ssl.HostnameVerifier;
 import javax.net.ssl.SSLSocket;
@@ -32,28 +32,19 @@ import java.nio.channels.Channel;
  * @author <a href="mailto:stanley.shyiko@gmail.com">Stanley Shyiko</a>
  */
 public class PacketChannel implements Channel {
-
     private Socket socket;
     private ByteArrayInputStream inputStream;
     private ByteArrayOutputStream outputStream;
 
-    public PacketChannel(String hostname, int port) throws IOException {
-        this(new Socket(hostname, port));
-    }
-
+    public PacketChannel(String hostname, int port) throws IOException { this(new Socket(hostname, port)); }
     public PacketChannel(Socket socket) throws IOException {
         this.socket = socket;
         this.inputStream = new ByteArrayInputStream(new BufferedSocketInputStream(socket.getInputStream()));
         this.outputStream = new ByteArrayOutputStream(socket.getOutputStream());
     }
 
-    public ByteArrayInputStream getInputStream() {
-        return inputStream;
-    }
-
-    public ByteArrayOutputStream getOutputStream() {
-        return outputStream;
-    }
+    public ByteArrayInputStream getInputStream() { return inputStream; }
+    public ByteArrayOutputStream getOutputStream() { return outputStream; }
 
     public byte[] read() throws IOException {
         int length = inputStream.readInteger(3);
@@ -61,6 +52,7 @@ public class PacketChannel implements Channel {
         return inputStream.read(length);
     }
 
+    public void write(Command command) throws IOException { write(command, 0); }
     public void write(Command command, int packetNumber) throws IOException {
         byte[] body = command.toByteArray();
         outputStream.writeInteger(body.length, 3); // packet length
@@ -71,27 +63,21 @@ public class PacketChannel implements Channel {
         outputStream.flush();
     }
 
-    public void write(Command command) throws IOException {
-        write(command, 0);
-    }
-
+    /* TODO */
     public void upgradeToSSL(SSLSocketFactory sslSocketFactory, HostnameVerifier hostnameVerifier) throws IOException {
         SSLSocket sslSocket = sslSocketFactory.createSocket(this.socket);
         sslSocket.startHandshake();
         socket = sslSocket;
         inputStream = new ByteArrayInputStream(sslSocket.getInputStream());
         outputStream = new ByteArrayOutputStream(sslSocket.getOutputStream());
-        if (hostnameVerifier != null && !hostnameVerifier.verify(sslSocket.getInetAddress().getHostName(),
-            sslSocket.getSession())) {
-            throw new IdentityVerificationException("\"" + sslSocket.getInetAddress().getHostName() +
-                "\" identity was not confirmed");
+        if (hostnameVerifier != null &&
+                !hostnameVerifier.verify(sslSocket.getInetAddress().getHostName(), sslSocket.getSession())) {
+            throw new IdentityVerificationException("\"" + sslSocket.getInetAddress().getHostName() + "\" identity was not confirmed");
         }
     }
 
     @Override
-    public boolean isOpen() {
-        return !socket.isClosed();
-    }
+    public boolean isOpen() { return !socket.isClosed(); }
 
     @Override
     public void close() throws IOException {

@@ -22,6 +22,5 @@ import java.net.SocketException;
  * @author <a href="mailto:stanley.shyiko@gmail.com">Stanley Shyiko</a>
  */
 public interface SocketFactory {
-
     Socket createSocket() throws SocketException;
 }

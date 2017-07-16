@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package com.github.shyiko.mysql.binlog.network;
+package com.github.shyiko.mysql.binlog.network.ssl;
 
 /**
  * @see <a href="https://dev.mysql.com/doc/refman/5.7/en/secure-connection-options.html#option_general_ssl-mode>
@@ -21,7 +21,6 @@ package com.github.shyiko.mysql.binlog.network;
  * @author <a href="mailto:stanley.shyiko@gmail.com">Stanley Shyiko</a>
  */
 public enum SSLMode {
-
     /**
      * Establish a secure (encrypted) connection if the server supports secure connections.
      * Fall back to an unencrypted connection otherwise.

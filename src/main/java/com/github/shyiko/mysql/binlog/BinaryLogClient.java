@@ -30,26 +30,26 @@ import com.github.shyiko.mysql.binlog.deserialization.GtidEventDataDeserializer;
 import com.github.shyiko.mysql.binlog.deserialization.RotateEventDataDeserializer;
 import com.github.shyiko.mysql.binlog.io.ByteArrayInputStream;
 import com.github.shyiko.mysql.binlog.jmx.BinaryLogClientMXBean;
-import com.github.shyiko.mysql.binlog.network.AuthenticationException;
+import com.github.shyiko.mysql.binlog.exception.AuthenticationException;
 import com.github.shyiko.mysql.binlog.network.ClientCapabilities;
-import com.github.shyiko.mysql.binlog.network.DefaultSSLSocketFactory;
-import com.github.shyiko.mysql.binlog.network.SSLMode;
-import com.github.shyiko.mysql.binlog.network.SSLSocketFactory;
-import com.github.shyiko.mysql.binlog.network.ServerException;
+import com.github.shyiko.mysql.binlog.network.ssl.DefaultSSLSocketFactory;
+import com.github.shyiko.mysql.binlog.network.ssl.SSLMode;
+import com.github.shyiko.mysql.binlog.network.ssl.SSLSocketFactory;
+import com.github.shyiko.mysql.binlog.exception.ServerException;
 import com.github.shyiko.mysql.binlog.network.SocketFactory;
 import com.github.shyiko.mysql.binlog.network.TLSHostnameVerifier;
-import com.github.shyiko.mysql.binlog.network.protocol.ErrorPacket;
-import com.github.shyiko.mysql.binlog.network.protocol.GreetingPacket;
-import com.github.shyiko.mysql.binlog.network.protocol.Packet;
-import com.github.shyiko.mysql.binlog.network.protocol.PacketChannel;
-import com.github.shyiko.mysql.binlog.network.protocol.ResultSetRowPacket;
-import com.github.shyiko.mysql.binlog.network.protocol.command.AuthenticateCommand;
-import com.github.shyiko.mysql.binlog.network.protocol.command.Command;
-import com.github.shyiko.mysql.binlog.network.protocol.command.DumpBinaryLogCommand;
-import com.github.shyiko.mysql.binlog.network.protocol.command.DumpBinaryLogGtidCommand;
-import com.github.shyiko.mysql.binlog.network.protocol.command.PingCommand;
-import com.github.shyiko.mysql.binlog.network.protocol.command.QueryCommand;
-import com.github.shyiko.mysql.binlog.network.protocol.command.SSLRequestCommand;
+import com.github.shyiko.mysql.binlog.network.protocol.response.ErrorPacket;
+import com.github.shyiko.mysql.binlog.network.protocol.response.GreetingPacket;
+import com.github.shyiko.mysql.binlog.network.protocol.response.Packet;
+import com.github.shyiko.mysql.binlog.network.protocol.response.PacketChannel;
+import com.github.shyiko.mysql.binlog.network.protocol.response.ResultSetRowPacket;
+import com.github.shyiko.mysql.binlog.network.protocol.request.AuthenticateCommand;
+import com.github.shyiko.mysql.binlog.network.protocol.request.Command;
+import com.github.shyiko.mysql.binlog.network.protocol.request.DumpBinaryLogCommand;
+import com.github.shyiko.mysql.binlog.network.protocol.request.DumpBinaryLogGtidCommand;
+import com.github.shyiko.mysql.binlog.network.protocol.request.PingCommand;
+import com.github.shyiko.mysql.binlog.network.protocol.request.QueryCommand;
+import com.github.shyiko.mysql.binlog.network.protocol.request.SSLRequestCommand;
 
 import javax.net.ssl.SSLContext;
 import javax.net.ssl.TrustManager;
@@ -80,13 +80,8 @@ import java.util.concurrent.locks.ReentrantLock;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
-/**
- * MySQL replication stream client.
- *
- * @author <a href="mailto:stanley.shyiko@gmail.com">Stanley Shyiko</a>
- */
+/* MySQL replication stream client. */
 public class BinaryLogClient implements BinaryLogClientMXBean {
-
     private static final SSLSocketFactory DEFAULT_REQUIRED_SSL_MODE_SOCKET_FACTORY = new DefaultSSLSocketFactory() {
 
         @Override
@@ -123,71 +118,64 @@ public class BinaryLogClient implements BinaryLogClientMXBean {
     private final String username;
     private final String password;
 
-    private boolean blocking = true;
-    private long serverId = 65535;
+    private boolean blocking = true;    // blocking blocking mode. If set to false - BinaryLogClient will disconnect after the last event.
+
+    /**
+     * @param serverId server id (in the range from 1 to 2^32 - 1). This value MUST be unique across whole replication
+     * group (that is, different from any other server id being used by any master or slave). Keep in mind that each
+     * binary log client (mysql-binlog-connector-java/BinaryLogClient, mysqlbinlog, etc) should be treated as a
+     * simplified slave and thus MUST also use a different server id.
+     * @see #getServerId()
+     */
+    private long serverId = 65535;      // server id (65535 by default)
+
+    /**
+     * Special values are:
+     *   null   which turns on automatic resolution (resulting in the last known binlog and position). This is what
+     *          happens by default when you don't specify binary log filename explicitly
+     *   ""     (empty string), which instructs server to stream events starting from the oldest known binlog
+     */
     private volatile String binlogFilename;
-    private volatile long binlogPosition = 4;
+    private volatile long binlogPosition = 4;   /* Any value less than 4 gets automatically adjusted to 4 on connect */
     private volatile long connectionId;
     private SSLMode sslMode = SSLMode.DISABLED;
 
-    private GtidSet gtidSet;
-    private final Object gtidSetAccessLock = new Object();
-    private boolean gtidSetFallbackToPurged;
+    private GtidSet gtidSet;                                // TODO this value changes with each received GTID event (provided client is in GTID mode).
+    private final Object gtidSetAccessLock = new Object();  // TODO
+    private boolean gtidSetFallbackToPurged;                // TODO
 
-    private EventDeserializer eventDeserializer = new EventDeserializer();
+    private EventDeserializer eventDeserializer = new EventDeserializer();  // 解析一个binlog数据包
 
     private final List<EventListener> eventListeners = new LinkedList<EventListener>();
     private final List<LifecycleListener> lifecycleListeners = new LinkedList<LifecycleListener>();
 
-    private SocketFactory socketFactory;
+    private SocketFactory socketFactory;    // custom socket factory. If not provided, socket will be created with "new Socket()"
     private SSLSocketFactory sslSocketFactory;
 
-    private volatile PacketChannel channel;
+    private volatile PacketChannel channel; // 网络连接
     private volatile boolean connected;
 
     private ThreadFactory threadFactory;
 
-    private boolean keepAlive = true;
-    private long keepAliveInterval = TimeUnit.MINUTES.toMillis(1);
+    private boolean keepAlive = true;   // "keep alive" thread should be automatically started (default)
+    private long keepAliveInterval = TimeUnit.MINUTES.toMillis(1);  // "keep alive" interval in milliseconds, 1 minute by default. 判断是否超时
 
-    private long heartbeatInterval;
+    private long heartbeatInterval;     // heartbeat period in milliseconds (0 if not set (default)).
     private volatile long eventLastSeen;
 
-    private long connectTimeout = TimeUnit.SECONDS.toMillis(3);
+    private long connectTimeout = TimeUnit.SECONDS.toMillis(3); // "keep alive" connect timeout in milliseconds.
 
     private volatile ExecutorService keepAliveThreadExecutor;
 
     private final Lock connectLock = new ReentrantLock();
 
-    /**
-     * Alias for BinaryLogClient("localhost", 3306, &lt;no schema&gt; = null, username, password).
-     * @see BinaryLogClient#BinaryLogClient(String, int, String, String, String)
-     */
-    public BinaryLogClient(String username, String password) {
-        this("localhost", 3306, null, username, password);
-    }
-
-    /**
-     * Alias for BinaryLogClient("localhost", 3306, schema, username, password).
-     * @see BinaryLogClient#BinaryLogClient(String, int, String, String, String)
-     */
-    public BinaryLogClient(String schema, String username, String password) {
-        this("localhost", 3306, schema, username, password);
-    }
-
-    /**
-     * Alias for BinaryLogClient(hostname, port, &lt;no schema&gt; = null, username, password).
-     * @see BinaryLogClient#BinaryLogClient(String, int, String, String, String)
-     */
-    public BinaryLogClient(String hostname, int port, String username, String password) {
-        this(hostname, port, null, username, password);
-    }
-
+    public BinaryLogClient(String username, String password) { this("localhost", 3306, null, username, password); }
+    public BinaryLogClient(String schema, String username, String password) { this("localhost", 3306, schema, username, password); }
+    public BinaryLogClient(String hostname, int port, String username, String password) { this(hostname, port, null, username, password); }
     /**
      * @param hostname mysql server hostname
      * @param port mysql server port
-     * @param schema database name, nullable. Note that this parameter has nothing to do with event filtering. It's
-     * used only during the authentication.
+     * @param schema database name, nullable. Note that this parameter has nothing to do with event filtering. It's used only during the authentication.
      * @param username login name
      * @param password password
      */
@@ -199,297 +187,32 @@ public class BinaryLogClient implements BinaryLogClientMXBean {
         this.password = password;
     }
 
-    public boolean isBlocking() {
-        return blocking;
-    }
 
-    /**
-     * @param blocking blocking mode. If set to false - BinaryLogClient will disconnect after the last event.
-     */
-    public void setBlocking(boolean blocking) {
-        this.blocking = blocking;
-    }
-
-    public SSLMode getSSLMode() {
-        return sslMode;
-    }
-
-    public void setSSLMode(SSLMode sslMode) {
-        if (sslMode == null) {
-            throw new IllegalArgumentException("SSL mode cannot be NULL");
-        }
-        this.sslMode = sslMode;
-    }
-
-    /**
-     * @return server id (65535 by default)
-     * @see #setServerId(long)
-     */
-    public long getServerId() {
-        return serverId;
-    }
-
-    /**
-     * @param serverId server id (in the range from 1 to 2^32 - 1). This value MUST be unique across whole replication
-     * group (that is, different from any other server id being used by any master or slave). Keep in mind that each
-     * binary log client (mysql-binlog-connector-java/BinaryLogClient, mysqlbinlog, etc) should be treated as a
-     * simplified slave and thus MUST also use a different server id.
-     * @see #getServerId()
-     */
-    public void setServerId(long serverId) {
-        this.serverId = serverId;
-    }
-
-    /**
-     * @return binary log filename, nullable (and null be default). Note that this value is automatically tracked by
-     * the client and thus is subject to change (in response to {@link EventType#ROTATE}, for example).
-     * @see #setBinlogFilename(String)
-     */
-    public String getBinlogFilename() {
-        return binlogFilename;
-    }
-
-    /**
-     * @param binlogFilename binary log filename.
-     * Special values are:
-     * <ul>
-     *   <li>null, which turns on automatic resolution (resulting in the last known binlog and position). This is what
-     * happens by default when you don't specify binary log filename explicitly.</li>
-     *   <li>"" (empty string), which instructs server to stream events starting from the oldest known binlog.</li>
-     * </ul>
-     * @see #getBinlogFilename()
-     */
-    public void setBinlogFilename(String binlogFilename) {
-        this.binlogFilename = binlogFilename;
-    }
-
-    /**
-     * @return binary log position of the next event, 4 by default (which is a position of first event). Note that this
-     * value changes with each incoming event.
-     * @see #setBinlogPosition(long)
-     */
-    public long getBinlogPosition() {
-        return binlogPosition;
-    }
-
-    /**
-     * @param binlogPosition binary log position. Any value less than 4 gets automatically adjusted to 4 on connect.
-     * @see #getBinlogPosition()
-     */
-    public void setBinlogPosition(long binlogPosition) {
-        this.binlogPosition = binlogPosition;
-    }
-
-    /**
-     * @return thread id
-     */
-    public long getConnectionId() {
-        return connectionId;
-    }
-
-    /**
-     * @return GTID set. Note that this value changes with each received GTID event (provided client is in GTID mode).
-     * @see #setGtidSet(String)
-     */
-    public String getGtidSet() {
-        synchronized (gtidSetAccessLock) {
-            return gtidSet != null ? gtidSet.toString() : null;
-        }
-    }
-
-    /**
-     * @param gtidSet GTID set (can be an empty string).
-     * <p>NOTE #1: Any value but null will switch BinaryLogClient into a GTID mode (this will also set binlogFilename
-     * to "" (provided it's null) forcing MySQL to send events starting from the oldest known binlog (keep in mind
-     * that connection will fail if gtid_purged is anything but empty (unless
-     * {@link #setGtidSetFallbackToPurged(boolean)} is set to true))).
-     * <p>NOTE #2: {@link #setBinlogFilename(String)} and {@link #setBinlogPosition(long)} can be used to specify the
-     * exact position from which MySQL server should start streaming events (taking into account GTID set).
-     * <p>NOTE #3: GTID set is automatically updated with each incoming GTID event (provided GTID mode is on).
-     * @see #getGtidSet()
-     * @see #setGtidSetFallbackToPurged(boolean)
-     */
-    public void setGtidSet(String gtidSet) {
-        if (gtidSet != null && this.binlogFilename == null) {
-            this.binlogFilename = "";
-        }
-        synchronized (gtidSetAccessLock) {
-            this.gtidSet = gtidSet != null ? new GtidSet(gtidSet) : null;
-        }
-    }
-
-    /**
-     * @see #setGtidSetFallbackToPurged(boolean)
-     */
-    public boolean isGtidSetFallbackToPurged() {
-        return gtidSetFallbackToPurged;
-    }
-
-    /**
-     * @param gtidSetFallbackToPurged true if gtid_purged should be used as a fallback when gtidSet is set to "" and
-     * MySQL server has purged some of the binary logs, false otherwise (default).
-     */
-    public void setGtidSetFallbackToPurged(boolean gtidSetFallbackToPurged) {
-        this.gtidSetFallbackToPurged = gtidSetFallbackToPurged;
-    }
-
-    /**
-     * @return true if "keep alive" thread should be automatically started (default), false otherwise.
-     * @see #setKeepAlive(boolean)
-     */
-    public boolean isKeepAlive() {
-        return keepAlive;
-    }
-
-    /**
-     * @param keepAlive true if "keep alive" thread should be automatically started (recommended and true by default),
-     * false otherwise.
-     * @see #isKeepAlive()
-     * @see #setKeepAliveInterval(long)
-     */
-    public void setKeepAlive(boolean keepAlive) {
-        this.keepAlive = keepAlive;
-    }
-
-    /**
-     * @return "keep alive" interval in milliseconds, 1 minute by default.
-     * @see #setKeepAliveInterval(long)
-     */
-    public long getKeepAliveInterval() {
-        return keepAliveInterval;
-    }
-
-    /**
-     * @param keepAliveInterval "keep alive" interval in milliseconds.
-     * @see #getKeepAliveInterval()
-     * @see #setHeartbeatInterval(long)
-     */
-    public void setKeepAliveInterval(long keepAliveInterval) {
-        this.keepAliveInterval = keepAliveInterval;
-    }
-
-    /**
-     * @return "keep alive" connect timeout in milliseconds.
-     * @see #setKeepAliveConnectTimeout(long)
-     *
-     * @deprecated in favour of {@link #getConnectTimeout()}
-     */
-    public long getKeepAliveConnectTimeout() {
-        return connectTimeout;
-    }
-
-    /**
-     * @param connectTimeout "keep alive" connect timeout in milliseconds.
-     * @see #getKeepAliveConnectTimeout()
-    *
-     * @deprecated in favour of {@link #setConnectTimeout(long)}
-     */
-    public void setKeepAliveConnectTimeout(long connectTimeout) {
-        this.connectTimeout = connectTimeout;
-    }
-
-    /**
-     * @return heartbeat period in milliseconds (0 if not set (default)).
-     * @see #setHeartbeatInterval(long)
-     */
-    public long getHeartbeatInterval() {
-        return heartbeatInterval;
-    }
-
-    /**
-     * @param heartbeatInterval heartbeat period in milliseconds.
-     * <p>
-     * If set (recommended)
-     * <ul>
-     * <li> HEARTBEAT event will be emitted every "heartbeatInterval".
-     * <li> if {@link #setKeepAlive(boolean)} is on then keepAlive thread will attempt to reconnect if no
-     *   HEARTBEAT events were received within {@link #setKeepAliveInterval(long)} (instead of trying to send
-     *   PING every {@link #setKeepAliveInterval(long)}, which is fundamentally flawed -
-     *   https://github.com/shyiko/mysql-binlog-connector-java/issues/118).
-     * </ul>
-     * Note that when used together with keepAlive heartbeatInterval MUST be set less than keepAliveInterval.
-     *
-     * @see #getHeartbeatInterval()
-     */
-    public void setHeartbeatInterval(long heartbeatInterval) {
-        this.heartbeatInterval = heartbeatInterval;
-    }
-
-    /**
-     * @return connect timeout in milliseconds, 3 seconds by default.
-     * @see #setConnectTimeout(long)
-     */
-    public long getConnectTimeout() {
-        return connectTimeout;
-    }
-
-    /**
-     * @param connectTimeout connect timeout in milliseconds.
-     * @see #getConnectTimeout()
-     */
-    public void setConnectTimeout(long connectTimeout) {
-        this.connectTimeout = connectTimeout;
-    }
-
-    /**
-     * @param eventDeserializer custom event deserializer
-     */
-    public void setEventDeserializer(EventDeserializer eventDeserializer) {
-        if (eventDeserializer == null) {
-            throw new IllegalArgumentException("Event deserializer cannot be NULL");
-        }
-        this.eventDeserializer = eventDeserializer;
-    }
-
-    /**
-     * @param socketFactory custom socket factory. If not provided, socket will be created with "new Socket()".
-     */
-    public void setSocketFactory(SocketFactory socketFactory) {
-        this.socketFactory = socketFactory;
-    }
-
-    /**
-     * @param sslSocketFactory custom ssl socket factory
-     */
-    public void setSslSocketFactory(SSLSocketFactory sslSocketFactory) {
-        this.sslSocketFactory = sslSocketFactory;
-    }
-
-    /**
-     * @param threadFactory custom thread factory. If not provided, threads will be created using simple "new Thread()".
-     */
-    public void setThreadFactory(ThreadFactory threadFactory) {
-        this.threadFactory = threadFactory;
-    }
-
-    /**
-     * Connect to the replication stream. Note that this method blocks until disconnected.
-     * @throws AuthenticationException if authentication fails
-     * @throws ServerException if MySQL server responds with an error
-     * @throws IOException if anything goes wrong while trying to connect
-     */
+    /* Connect to the replication stream. Note that this method blocks until disconnected. */
     public void connect() throws IOException {
         if (!connectLock.tryLock()) {
             throw new IllegalStateException("BinaryLogClient is already connected");
         }
+
         boolean notifyWhenDisconnected = false;
         try {
+            // 连接超时包括本地操作的时间
             Callable cancelDisconnect = null;
             try {
                 try {
                     long start = System.currentTimeMillis();
                     channel = openChannel();
                     if (connectTimeout > 0 && !isKeepAliveThreadRunning()) {
-                        cancelDisconnect = scheduleDisconnectIn(connectTimeout -
-                            (System.currentTimeMillis() - start));
+                        cancelDisconnect = scheduleDisconnectIn(connectTimeout - (System.currentTimeMillis() - start));
                     }
+                    // 服务端会主动发起数据包
                     if (channel.getInputStream().peek() == -1) {
                         throw new EOFException();
                     }
                 } catch (IOException e) {
-                    throw new IOException("Failed to connect to MySQL on " + hostname + ":" + port +
-                        ". Please make sure it's running.", e);
+                    throw new IOException("Failed to connect to MySQL on " + hostname + ":" + port + ". Please make sure it's running.", e);
                 }
+
                 GreetingPacket greetingPacket = receiveGreeting();
                 authenticate(greetingPacket);
                 connectionId = greetingPacket.getThreadId();
@@ -509,13 +232,16 @@ public class BinaryLogClient implements BinaryLogClientMXBean {
                     }
                     binlogPosition = 4;
                 }
+
                 ChecksumType checksumType = fetchBinlogChecksum();
                 if (checksumType != ChecksumType.NONE) {
                     confirmSupportOfChecksum(checksumType);
                 }
+
                 if (heartbeatInterval > 0) {
                     enableHeartbeat();
                 }
+
                 requestBinaryLogStream();
             } catch (IOException e) {
                 disconnectChannel();
@@ -523,11 +249,11 @@ public class BinaryLogClient implements BinaryLogClientMXBean {
             } finally {
                 if (cancelDisconnect != null) {
                     try {
+                        // 表示连接结束
                         cancelDisconnect.call();
                     } catch (Exception e) {
                         if (logger.isLoggable(Level.WARNING)) {
-                            logger.warning("\"" + e.getMessage() +
-                                "\" was thrown while canceling scheduled disconnect call");
+                            logger.warning("\"" + e.getMessage() + "\" was thrown while canceling scheduled disconnect call");
                         }
                     }
                 }
@@ -539,14 +265,15 @@ public class BinaryLogClient implements BinaryLogClientMXBean {
                 synchronized (gtidSetAccessLock) {
                     position = gtidSet != null ? gtidSet.toString() : binlogFilename + "/" + binlogPosition;
                 }
-                logger.info("Connected to " + hostname + ":" + port + " at " + position +
-                    " (" + (blocking ? "sid:" + serverId + ", " : "") + "cid:" + connectionId + ")");
+                logger.info("Connected to " + hostname + ":" + port + " at " + position + " (" + (blocking ? "sid:" + serverId + ", " : "") + "cid:" + connectionId + ")");
             }
+
             synchronized (lifecycleListeners) {
                 for (LifecycleListener lifecycleListener : lifecycleListeners) {
                     lifecycleListener.onConnect(this);
                 }
             }
+
             if (keepAlive && !isKeepAliveThreadRunning()) {
                 spawnKeepAliveThread();
             }
@@ -575,6 +302,7 @@ public class BinaryLogClient implements BinaryLogClientMXBean {
         return new PacketChannel(socket);
     }
 
+    /* 异步超时 */
     private Callable scheduleDisconnectIn(final long timeout) {
         final BinaryLogClient self = this;
         final CountDownLatch connectLatch = new CountDownLatch(1);
@@ -590,8 +318,7 @@ public class BinaryLogClient implements BinaryLogClientMXBean {
                 }
                 if (connectLatch.getCount() != 0) {
                     if (logger.isLoggable(Level.WARNING)) {
-                        logger.warning("Failed to establish connection in " + timeout + "ms. " +
-                            "Forcing disconnect.");
+                        logger.warning("Failed to establish connection in " + timeout + "ms. " + "Forcing disconnect.");
                     }
                     try {
                         self.disconnectChannel();
@@ -604,8 +331,8 @@ public class BinaryLogClient implements BinaryLogClientMXBean {
             }
         }, "blc-disconnect-" + hostname + ":" + port);
         thread.start();
-        return new Callable() {
 
+        return new Callable() {
             public Object call() throws Exception {
                 connectLatch.countDown();
                 thread.join();
@@ -614,28 +341,30 @@ public class BinaryLogClient implements BinaryLogClientMXBean {
         };
     }
 
+    // 获得服务端的权限数据包
     private GreetingPacket receiveGreeting() throws IOException {
         byte[] initialHandshakePacket = channel.read();
         if (initialHandshakePacket[0] == (byte) 0xFF /* error */) {
             byte[] bytes = Arrays.copyOfRange(initialHandshakePacket, 1, initialHandshakePacket.length);
             ErrorPacket errorPacket = new ErrorPacket(bytes);
-            throw new ServerException(errorPacket.getErrorMessage(), errorPacket.getErrorCode(),
-                    errorPacket.getSqlState());
+            throw new ServerException(errorPacket.getErrorMessage(), errorPacket.getErrorCode(), errorPacket.getSqlState());
         }
+
         return new GreetingPacket(initialHandshakePacket);
     }
 
+    /* 让服务端发送心跳 */
     private void enableHeartbeat() throws IOException {
         channel.write(new QueryCommand("set @master_heartbeat_period=" + heartbeatInterval * 1000000));
         byte[] statementResult = channel.read();
         if (statementResult[0] == (byte) 0xFF /* error */) {
             byte[] bytes = Arrays.copyOfRange(statementResult, 1, statementResult.length);
             ErrorPacket errorPacket = new ErrorPacket(bytes);
-            throw new ServerException(errorPacket.getErrorMessage(), errorPacket.getErrorCode(),
-                errorPacket.getSqlState());
+            throw new ServerException(errorPacket.getErrorMessage(), errorPacket.getErrorCode(), errorPacket.getSqlState());
         }
     }
 
+    /* 发送binlog dump请求 */
     private void requestBinaryLogStream() throws IOException {
         long serverId = blocking ? this.serverId : 0; // http://bugs.mysql.com/bug.php?id=71178
         Command dumpBinaryLogCommand;
@@ -649,8 +378,7 @@ public class BinaryLogClient implements BinaryLogClientMXBean {
         channel.write(dumpBinaryLogCommand);
     }
 
-    private void ensureEventDataDeserializer(EventType eventType,
-             Class<? extends EventDataDeserializer> eventDataDeserializerClass) {
+    private void ensureEventDataDeserializer(EventType eventType, Class<? extends EventDataDeserializer> eventDataDeserializerClass) {
         EventDataDeserializer eventDataDeserializer = eventDeserializer.getEventDataDeserializer(eventType);
         if (eventDataDeserializer.getClass() != eventDataDeserializerClass &&
             eventDataDeserializer.getClass() != EventDeserializer.EventDataWrapper.Deserializer.class) {
@@ -660,10 +388,7 @@ public class BinaryLogClient implements BinaryLogClientMXBean {
             } catch (Exception e) {
                 throw new RuntimeException(e);
             }
-            eventDeserializer.setEventDataDeserializer(eventType,
-                new EventDeserializer.EventDataWrapper.Deserializer(internalEventDataDeserializer,
-                    eventDataDeserializer));
-        }
+            eventDeserializer.setEventDataDeserializer(eventType, new EventDeserializer.EventDataWrapper.Deserializer(internalEventDataDeserializer, eventDataDeserializer)); }
     }
 
     private void authenticate(GreetingPacket greetingPacket) throws IOException {
@@ -671,49 +396,47 @@ public class BinaryLogClient implements BinaryLogClientMXBean {
         int packetNumber = 1;
         if (sslMode != SSLMode.DISABLED) {
             boolean serverSupportsSSL = (greetingPacket.getServerCapabilities() & ClientCapabilities.SSL) != 0;
-            if (!serverSupportsSSL && (sslMode == SSLMode.REQUIRED || sslMode == SSLMode.VERIFY_CA ||
-                sslMode == SSLMode.VERIFY_IDENTITY)) {
+            if (!serverSupportsSSL && (sslMode == SSLMode.REQUIRED || sslMode == SSLMode.VERIFY_CA || sslMode == SSLMode.VERIFY_IDENTITY)) {
                 throw new IOException("MySQL server does not support SSL");
             }
+
             if (serverSupportsSSL) {
                 SSLRequestCommand sslRequestCommand = new SSLRequestCommand();
                 sslRequestCommand.setCollation(collation);
                 channel.write(sslRequestCommand, packetNumber++);
-                SSLSocketFactory sslSocketFactory =
-                    this.sslSocketFactory != null ?
-                        this.sslSocketFactory :
-                        sslMode == SSLMode.REQUIRED || sslMode == SSLMode.PREFERRED ?
-                            DEFAULT_REQUIRED_SSL_MODE_SOCKET_FACTORY :
-                            DEFAULT_VERIFY_CA_SSL_MODE_SOCKET_FACTORY;
-                channel.upgradeToSSL(sslSocketFactory,
-                    sslMode == SSLMode.VERIFY_IDENTITY ? new TLSHostnameVerifier() : null);
+                SSLSocketFactory sslSocketFactory = this.sslSocketFactory != null ? this.sslSocketFactory :
+                        (( sslMode==SSLMode.REQUIRED || sslMode==SSLMode.PREFERRED) ? DEFAULT_REQUIRED_SSL_MODE_SOCKET_FACTORY : DEFAULT_VERIFY_CA_SSL_MODE_SOCKET_FACTORY );
+
+                channel.upgradeToSSL(sslSocketFactory, sslMode == SSLMode.VERIFY_IDENTITY ? new TLSHostnameVerifier() : null);
             }
         }
-        AuthenticateCommand authenticateCommand = new AuthenticateCommand(schema, username, password,
-            greetingPacket.getScramble());
+
+        AuthenticateCommand authenticateCommand = new AuthenticateCommand(schema, username, password, greetingPacket.getScramble());
         authenticateCommand.setCollation(collation);
         channel.write(authenticateCommand, packetNumber);
         byte[] authenticationResult = channel.read();
         if (authenticationResult[0] != (byte) 0x00 /* ok */) {
+
             if (authenticationResult[0] == (byte) 0xFF /* error */) {
                 byte[] bytes = Arrays.copyOfRange(authenticationResult, 1, authenticationResult.length);
                 ErrorPacket errorPacket = new ErrorPacket(bytes);
-                throw new AuthenticationException(errorPacket.getErrorMessage(), errorPacket.getErrorCode(),
-                    errorPacket.getSqlState());
+                throw new AuthenticationException(errorPacket.getErrorMessage(), errorPacket.getErrorCode(), errorPacket.getSqlState());
             }
+
             throw new AuthenticationException("Unexpected authentication result (" + authenticationResult[0] + ")");
         }
     }
 
+    /* 定期检测服务端是否ok，不ok就重连 */
     private void spawnKeepAliveThread() {
-        final ExecutorService threadExecutor =
-            Executors.newSingleThreadExecutor(new ThreadFactory() {
+        final ExecutorService threadExecutor = Executors.newSingleThreadExecutor(new ThreadFactory() {
 
                 @Override
                 public Thread newThread(Runnable runnable) {
                     return newNamedThread(runnable, "blc-keepalive-" + hostname + ":" + port);
                 }
             });
+
         threadExecutor.submit(new Runnable() {
             @Override
             public void run() {
@@ -745,8 +468,7 @@ public class BinaryLogClient implements BinaryLogClientMXBean {
                             connect(connectTimeout);
                         } catch (Exception ce) {
                             if (logger.isLoggable(Level.WARNING)) {
-                                logger.warning("Failed to restore connection to " + hostname + ":" + port +
-                                    ". Next attempt in " + keepAliveInterval + "ms");
+                                logger.warning("Failed to restore connection to " + hostname + ":" + port + ". Next attempt in " + keepAliveInterval + "ms");
                             }
                         }
                     }
@@ -766,14 +488,7 @@ public class BinaryLogClient implements BinaryLogClientMXBean {
         return keepAliveThreadExecutor != null && !keepAliveThreadExecutor.isShutdown();
     }
 
-    /**
-     * Connect to the replication stream in a separate thread.
-     * @param timeout timeout in milliseconds
-     * @throws AuthenticationException if authentication fails
-     * @throws ServerException if MySQL server responds with an error
-     * @throws IOException if anything goes wrong while trying to connect
-     * @throws TimeoutException if client was unable to connect within given time limit
-     */
+    /* Connect to the replication stream in a separate thread. */
     public void connect(final long timeout) throws IOException, TimeoutException {
         final CountDownLatch countDownLatch = new CountDownLatch(1);
         AbstractLifecycleListener connectListener = new AbstractLifecycleListener() {
@@ -783,6 +498,7 @@ public class BinaryLogClient implements BinaryLogClientMXBean {
             }
         };
         registerLifecycleListener(connectListener);
+
         final AtomicReference<IOException> exceptionReference = new AtomicReference<IOException>();
         Runnable runnable = new Runnable() {
 
@@ -797,6 +513,7 @@ public class BinaryLogClient implements BinaryLogClientMXBean {
                 }
             }
         };
+
         newNamedThread(runnable, "blc-" + hostname + ":" + port).start();
         boolean started = false;
         try {
@@ -819,12 +536,6 @@ public class BinaryLogClient implements BinaryLogClientMXBean {
         }
     }
 
-    /**
-     * @return true if client is connected, false otherwise
-     */
-    public boolean isConnected() {
-        return connected;
-    }
 
     private String fetchGtidPurged() throws IOException {
         channel.write(new QueryCommand("show global variables like 'gtid_purged'"));
@@ -835,6 +546,7 @@ public class BinaryLogClient implements BinaryLogClientMXBean {
         return "";
     }
 
+    // 获得当前字段
     private void fetchBinlogFilenameAndPosition() throws IOException {
         ResultSetRowPacket[] resultSet;
         channel.write(new QueryCommand("show master status"));
@@ -847,6 +559,7 @@ public class BinaryLogClient implements BinaryLogClientMXBean {
         binlogPosition = Long.parseLong(resultSetRow.getValue(1));
     }
 
+    /* 获得校验类型 */
     private ChecksumType fetchBinlogChecksum() throws IOException {
         channel.write(new QueryCommand("show global variables like 'binlog_checksum'"));
         ResultSetRowPacket[] resultSet = readResultSet();
@@ -856,18 +569,20 @@ public class BinaryLogClient implements BinaryLogClientMXBean {
         return ChecksumType.valueOf(resultSet[0].getValue(1).toUpperCase());
     }
 
+    /* 设置服务端的校验类型 */
     private void confirmSupportOfChecksum(ChecksumType checksumType) throws IOException {
         channel.write(new QueryCommand("set @master_binlog_checksum= @@global.binlog_checksum"));
         byte[] statementResult = channel.read();
         if (statementResult[0] == (byte) 0xFF /* error */) {
             byte[] bytes = Arrays.copyOfRange(statementResult, 1, statementResult.length);
             ErrorPacket errorPacket = new ErrorPacket(bytes);
-            throw new ServerException(errorPacket.getErrorMessage(), errorPacket.getErrorCode(),
-                errorPacket.getSqlState());
+            throw new ServerException(errorPacket.getErrorMessage(), errorPacket.getErrorCode(), errorPacket.getSqlState());
         }
+
         eventDeserializer.setChecksumType(checksumType);
     }
 
+    /* 获得新的数据包 */
     private void listenForEventPackets() throws IOException {
         ByteArrayInputStream inputStream = channel.getInputStream();
         boolean completeShutdown = false;
@@ -878,18 +593,17 @@ public class BinaryLogClient implements BinaryLogClientMXBean {
                 int marker = inputStream.read();
                 if (marker == 0xFF) {
                     ErrorPacket errorPacket = new ErrorPacket(inputStream.read(packetLength - 1));
-                    throw new ServerException(errorPacket.getErrorMessage(), errorPacket.getErrorCode(),
-                        errorPacket.getSqlState());
+                    throw new ServerException(errorPacket.getErrorMessage(), errorPacket.getErrorCode(), errorPacket.getSqlState());
                 }
+
                 if (marker == 0xFE && !blocking) {
                     completeShutdown = true;
                     break;
                 }
+
                 Event event;
                 try {
-                    event = eventDeserializer.nextEvent(packetLength == MAX_PACKET_LENGTH ?
-                        new ByteArrayInputStream(readPacketSplitInChunks(inputStream, packetLength - 1)) :
-                        inputStream);
+                    event = eventDeserializer.nextEvent(packetLength == MAX_PACKET_LENGTH ? new ByteArrayInputStream(readPacketSplitInChunks(inputStream, packetLength - 1)) : inputStream);
                     if (event == null) {
                         throw new EOFException();
                     }
@@ -933,6 +647,7 @@ public class BinaryLogClient implements BinaryLogClientMXBean {
         }
     }
 
+    /* 读物切分成多个数据包的binlog */
     private byte[] readPacketSplitInChunks(ByteArrayInputStream inputStream, int packetLength) throws IOException {
         byte[] result = inputStream.read(packetLength);
         int chunkLength;
@@ -945,6 +660,7 @@ public class BinaryLogClient implements BinaryLogClientMXBean {
         return result;
     }
 
+    /* 更新的binlog位点 */
     private void updateClientBinlogFilenameAndPosition(Event event) {
         EventHeader eventHeader = event.getHeader();
         EventType eventType = eventHeader.getEventType();
@@ -958,10 +674,9 @@ public class BinaryLogClient implements BinaryLogClientMXBean {
             }
             binlogFilename = rotateEventData.getBinlogFilename();
             binlogPosition = rotateEventData.getBinlogPosition();
-        } else
-        // do not update binlogPosition on TABLE_MAP so that in case of reconnect (using a different instance of
-        // client) table mapping cache could be reconstructed before hitting row mutation event
-        if (eventType != EventType.TABLE_MAP && eventHeader instanceof EventHeaderV4) {
+        } else if (eventType != EventType.TABLE_MAP && eventHeader instanceof EventHeaderV4) {
+            // do not update binlogPosition on TABLE_MAP so that in case of reconnect (using a different instance of
+            // client) table mapping cache could be reconstructed before hitting row mutation event
             EventHeaderV4 trackableEventHeader = (EventHeaderV4) eventHeader;
             long nextBinlogPosition = trackableEventHeader.getNextPosition();
             if (nextBinlogPosition > 0) {
@@ -970,6 +685,7 @@ public class BinaryLogClient implements BinaryLogClientMXBean {
         }
     }
 
+    /* TODO */
     private void updateGtidSet(Event event) {
         EventHeader eventHeader = event.getHeader();
         if (eventHeader.getEventType() == EventType.GTID) {
@@ -988,63 +704,26 @@ public class BinaryLogClient implements BinaryLogClientMXBean {
         }
     }
 
+    /* 读取上次请求的结果 */
     private ResultSetRowPacket[] readResultSet() throws IOException {
         List<ResultSetRowPacket> resultSet = new LinkedList<ResultSetRowPacket>();
         byte[] statementResult = channel.read();
         if (statementResult[0] == (byte) 0xFF /* error */) {
             byte[] bytes = Arrays.copyOfRange(statementResult, 1, statementResult.length);
             ErrorPacket errorPacket = new ErrorPacket(bytes);
-            throw new ServerException(errorPacket.getErrorMessage(), errorPacket.getErrorCode(),
-                    errorPacket.getSqlState());
+            throw new ServerException(errorPacket.getErrorMessage(), errorPacket.getErrorCode(), errorPacket.getSqlState());
         }
+
+        // 忽略column定义的字段
         while ((channel.read())[0] != (byte) 0xFE /* eof */) { /* skip */ }
+
         for (byte[] bytes; (bytes = channel.read())[0] != (byte) 0xFE /* eof */; ) {
             resultSet.add(new ResultSetRowPacket(bytes));
         }
         return resultSet.toArray(new ResultSetRowPacket[resultSet.size()]);
     }
 
-    /**
-     * @return registered event listeners
-     */
-    public List<EventListener> getEventListeners() {
-        return Collections.unmodifiableList(eventListeners);
-    }
-
-    /**
-     * Register event listener. Note that multiple event listeners will be called in order they
-     * where registered.
-     */
-    public void registerEventListener(EventListener eventListener) {
-        synchronized (eventListeners) {
-            eventListeners.add(eventListener);
-        }
-    }
-
-    /**
-     * Unregister all event listener of specific type.
-     */
-    public void unregisterEventListener(Class<? extends EventListener> listenerClass) {
-        synchronized (eventListeners) {
-            Iterator<EventListener> iterator = eventListeners.iterator();
-            while (iterator.hasNext()) {
-                EventListener eventListener = iterator.next();
-                if (listenerClass.isInstance(eventListener)) {
-                    iterator.remove();
-                }
-            }
-        }
-    }
-
-    /**
-     * Unregister single event listener.
-     */
-    public void unregisterEventListener(EventListener eventListener) {
-        synchronized (eventListeners) {
-            eventListeners.remove(eventListener);
-        }
-    }
-
+    /* 在接收到event的调用监听函数 */
     private void notifyEventListeners(Event event) {
         if (event.getData() instanceof EventDeserializer.EventDataWrapper) {
             event = new Event(event.getHeader(), ((EventDeserializer.EventDataWrapper) event.getData()).getExternal());
@@ -1062,46 +741,6 @@ public class BinaryLogClient implements BinaryLogClientMXBean {
         }
     }
 
-    /**
-     * @return registered lifecycle listeners
-     */
-    public List<LifecycleListener> getLifecycleListeners() {
-        return Collections.unmodifiableList(lifecycleListeners);
-    }
-
-    /**
-     * Register lifecycle listener. Note that multiple lifecycle listeners will be called in order they
-     * where registered.
-     */
-    public void registerLifecycleListener(LifecycleListener lifecycleListener) {
-        synchronized (lifecycleListeners) {
-            lifecycleListeners.add(lifecycleListener);
-        }
-    }
-
-    /**
-     * Unregister all lifecycle listener of specific type.
-     */
-    public void unregisterLifecycleListener(Class<? extends LifecycleListener> listenerClass) {
-        synchronized (lifecycleListeners) {
-            Iterator<LifecycleListener> iterator = lifecycleListeners.iterator();
-            while (iterator.hasNext()) {
-                LifecycleListener lifecycleListener = iterator.next();
-                if (listenerClass.isInstance(lifecycleListener)) {
-                    iterator.remove();
-                }
-            }
-        }
-    }
-
-    /**
-     * Unregister single lifecycle listener.
-     */
-    public void unregisterLifecycleListener(LifecycleListener eventListener) {
-        synchronized (lifecycleListeners) {
-            lifecycleListeners.remove(eventListener);
-        }
-    }
 
     /**
      * Disconnect from the replication stream.
@@ -1148,6 +787,7 @@ public class BinaryLogClient implements BinaryLogClientMXBean {
         }
     }
 
+    // 断开连接
     private void disconnectChannel() throws IOException {
         connected = false;
         if (channel != null && channel.isOpen()) {
@@ -1155,28 +795,13 @@ public class BinaryLogClient implements BinaryLogClientMXBean {
         }
     }
 
-    /**
-     * {@link BinaryLogClient}'s event listener.
-     */
-    public interface EventListener {
 
-        void onEvent(Event event);
-    }
-
-    /**
-     * {@link BinaryLogClient}'s lifecycle listener.
-     */
+    public interface EventListener { void onEvent(Event event); }
     public interface LifecycleListener {
-
-        /**
-         * Called once client has successfully logged in but before started to receive binlog events.
-         */
+        /* Called once client has successfully logged in but before started to receive binlog events. */
         void onConnect(BinaryLogClient client);
 
-        /**
-         * It's guarantied to be called before {@link #onDisconnect(BinaryLogClient)}) in case of
-         * communication failure.
-         */
+        /* It's guarantied to be called before {@link #onDisconnect(BinaryLogClient)}) in case of communication failure. */
         void onCommunicationFailure(BinaryLogClient client, Exception ex);
 
         /**
@@ -1185,25 +810,142 @@ public class BinaryLogClient implements BinaryLogClientMXBean {
          */
         void onEventDeserializationFailure(BinaryLogClient client, Exception ex);
 
-        /**
-         * Called upon disconnect (regardless of the reason).
-         */
+        /* Called upon disconnect (regardless of the reason). */
         void onDisconnect(BinaryLogClient client);
     }
 
-    /**
-     * Default (no-op) implementation of {@link LifecycleListener}.
-     */
     public static abstract class AbstractLifecycleListener implements LifecycleListener {
-
         public void onConnect(BinaryLogClient client) { }
-
         public void onCommunicationFailure(BinaryLogClient client, Exception ex) { }
-
         public void onEventDeserializationFailure(BinaryLogClient client, Exception ex) { }
-
         public void onDisconnect(BinaryLogClient client) { }
-
     }
 
+
+
+    /************** setter/getter ****************/
+
+    public List<LifecycleListener> getLifecycleListeners() { return Collections.unmodifiableList(lifecycleListeners); }
+    public void registerLifecycleListener(LifecycleListener lifecycleListener) {
+        synchronized (lifecycleListeners) {
+            lifecycleListeners.add(lifecycleListener);
+        }
+    }
+
+    public void unregisterLifecycleListener(Class<? extends LifecycleListener> listenerClass) {
+        synchronized (lifecycleListeners) {
+            Iterator<LifecycleListener> iterator = lifecycleListeners.iterator();
+            while (iterator.hasNext()) {
+                LifecycleListener lifecycleListener = iterator.next();
+                if (listenerClass.isInstance(lifecycleListener)) {
+                    iterator.remove();
+                }
+            }
+        }
+    }
+
+    public void unregisterLifecycleListener(LifecycleListener eventListener) {
+        synchronized (lifecycleListeners) {
+            lifecycleListeners.remove(eventListener);
+        }
+    }
+
+
+    public List<EventListener> getEventListeners() { return Collections.unmodifiableList(eventListeners); }
+    public void registerEventListener(EventListener eventListener) {
+        synchronized (eventListeners) {
+            eventListeners.add(eventListener);
+        }
+    }
+
+    public void unregisterEventListener(Class<? extends EventListener> listenerClass) {
+        synchronized (eventListeners) {
+            Iterator<EventListener> iterator = eventListeners.iterator();
+            while (iterator.hasNext()) {
+                EventListener eventListener = iterator.next();
+                if (listenerClass.isInstance(eventListener)) {
+                    iterator.remove();
+                }
+            }
+        }
+    }
+
+    public void unregisterEventListener(EventListener eventListener) {
+        synchronized (eventListeners) {
+            eventListeners.remove(eventListener);
+        }
+    }
+
+    public SSLMode getSSLMode() { return sslMode; }
+    public void setSSLMode(SSLMode sslMode) {
+        if (sslMode == null) {
+            throw new IllegalArgumentException("SSL mode cannot be NULL");
+        }
+        this.sslMode = sslMode;
+    }
+
+    public String getGtidSet() {
+        synchronized (gtidSetAccessLock) {
+            return gtidSet != null ? gtidSet.toString() : null;
+        }
+    }
+
+    /**
+     * @param gtidSet GTID set (can be an empty string).
+     * <p>NOTE #1: Any value but null will switch BinaryLogClient into a GTID mode (this will also set binlogFilename
+     * to "" (provided it's null) forcing MySQL to send events starting from the oldest known binlog (keep in mind
+     * that connection will fail if gtid_purged is anything but empty (unless
+     * {@link #setGtidSetFallbackToPurged(boolean)} is set to true))).
+     * <p>NOTE #2: {@link #setBinlogFilename(String)} and {@link #setBinlogPosition(long)} can be used to specify the
+     * exact position from which MySQL server should start streaming events (taking into account GTID set).
+     * <p>NOTE #3: GTID set is automatically updated with each incoming GTID event (provided GTID mode is on).
+     * @see #getGtidSet()
+     * @see #setGtidSetFallbackToPurged(boolean)
+     */
+    public void setGtidSet(String gtidSet) {
+        if (gtidSet != null && this.binlogFilename == null) {
+            this.binlogFilename = "";
+        }
+        synchronized (gtidSetAccessLock) {
+            this.gtidSet = gtidSet != null ? new GtidSet(gtidSet) : null;
+        }
+    }
+
+    /**
+     * @param gtidSetFallbackToPurged true if gtid_purged should be used as a fallback when gtidSet is set to "" and
+     * MySQL server has purged some of the binary logs, false otherwise (default).
+     */
+    public void setGtidSetFallbackToPurged(boolean gtidSetFallbackToPurged) { this.gtidSetFallbackToPurged = gtidSetFallbackToPurged; }
+    public boolean isGtidSetFallbackToPurged() { return gtidSetFallbackToPurged; }
+
+    public void setEventDeserializer(EventDeserializer eventDeserializer) {
+        if (eventDeserializer == null) {
+            throw new IllegalArgumentException("Event deserializer cannot be NULL");
+        }
+        this.eventDeserializer = eventDeserializer;
+    }
+
+    public long getServerId() { return serverId; }
+    public void setServerId(long serverId) { this.serverId = serverId; }
+    public String getBinlogFilename() { return binlogFilename; }
+    public void setBinlogFilename(String binlogFilename) { this.binlogFilename = binlogFilename; }
+    public long getBinlogPosition() { return binlogPosition; }
+    public void setBinlogPosition(long binlogPosition) { this.binlogPosition = binlogPosition; }
+    public long getConnectionId() { return connectionId; }
+    public boolean isBlocking() { return blocking; }
+    public void setBlocking(boolean blocking) { this.blocking = blocking; }
+    public boolean isKeepAlive() { return keepAlive; }
+    public void setKeepAlive(boolean keepAlive) { this.keepAlive = keepAlive; }
+    public long getKeepAliveInterval() { return keepAliveInterval; }
+    public void setKeepAliveInterval(long keepAliveInterval) { this.keepAliveInterval = keepAliveInterval; }
+    public long getKeepAliveConnectTimeout() { return connectTimeout; }
+    public void setKeepAliveConnectTimeout(long connectTimeout) { this.connectTimeout = connectTimeout; }
+    public long getHeartbeatInterval() { return heartbeatInterval; }
+    public void setHeartbeatInterval(long heartbeatInterval) { this.heartbeatInterval = heartbeatInterval; }
+    public long getConnectTimeout() { return connectTimeout; }
+    public void setConnectTimeout(long connectTimeout) { this.connectTimeout = connectTimeout; }
+    public void setSocketFactory(SocketFactory socketFactory) { this.socketFactory = socketFactory; }
+    public void setSslSocketFactory(SSLSocketFactory sslSocketFactory) { this.sslSocketFactory = sslSocketFactory; }
+    public void setThreadFactory(ThreadFactory threadFactory) { this.threadFactory = threadFactory; }
+    public boolean isConnected() { return connected; }
 }

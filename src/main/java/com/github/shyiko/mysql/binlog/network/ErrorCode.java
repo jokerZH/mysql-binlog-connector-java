@@ -259,7 +259,7 @@ public final class ErrorCode {
     public static final int ER_NO_DB_ERROR = 1046;
 
     /**
-     * Unknown command
+     * Unknown request
      */
     public static final int ER_UNKNOWN_COM_ERROR = 1047;
 
@@ -741,17 +741,17 @@ public final class ErrorCode {
     public static final int ER_NONEXISTING_GRANT = 1141;
 
     /**
-     * %-.128s command denied to user '%-.48s'@'%-.64s' for table '%-.64s'
+     * %-.128s request denied to user '%-.48s'@'%-.64s' for table '%-.64s'
      */
     public static final int ER_TABLEACCESS_DENIED_ERROR = 1142;
 
     /**
-     * %-.16s command denied to user '%-.48s'@'%-.64s' for column '%-.192s' in table '%-.192s'
+     * %-.16s request denied to user '%-.48s'@'%-.64s' for column '%-.192s' in table '%-.192s'
      */
     public static final int ER_COLUMNACCESS_DENIED_ERROR = 1143;
 
     /**
-     * Illegal GRANT/REVOKE command; please consult the manual to see which privileges can be used
+     * Illegal GRANT/REVOKE request; please consult the manual to see which privileges can be used
      */
     public static final int ER_ILLEGAL_GRANT_FOR_TABLE = 1144;
 
@@ -771,7 +771,7 @@ public final class ErrorCode {
     public static final int ER_NONEXISTING_TABLE_GRANT = 1147;
 
     /**
-     * The used command is not allowed with this MySQL version
+     * The used request is not allowed with this MySQL version
      */
     public static final int ER_NOT_ALLOWED_COMMAND = 1148;
 
@@ -927,7 +927,7 @@ public final class ErrorCode {
     public static final int ER_CHECK_NOT_IMPLEMENTED = 1178;
 
     /**
-     * You are not allowed to execute this command in a transaction
+     * You are not allowed to execute this request in a transaction
      */
     public static final int ER_CANT_DO_THIS_DURING_AN_TRANSACTION = 1179;
 
@@ -992,7 +992,7 @@ public final class ErrorCode {
     public static final int ER_FT_MATCHING_KEY_NOT_FOUND = 1191;
 
     /**
-     * Can't execute the given command because you have active locked tables or an active transaction
+     * Can't execute the given request because you have active locked tables or an active transaction
      */
     public static final int ER_LOCK_OR_ACTIVE_TRANSACTION = 1192;
 
@@ -1133,7 +1133,7 @@ public final class ErrorCode {
     public static final int ER_QUERY_ON_MASTER = 1219;
 
     /**
-     * Error when executing command %s: %-.128s
+     * Error when executing request %s: %-.128s
      */
     public static final int ER_ERROR_WHEN_EXECUTING_COMMAND = 1220;
 
@@ -1512,7 +1512,7 @@ public final class ErrorCode {
     public static final int ER_INVALID_ON_UPDATE = 1294;
 
     /**
-     * This command is not supported in the prepared statement protocol yet
+     * This request is not supported in the prepared statement protocol yet
      */
     public static final int ER_UNSUPPORTED_PS = 1295;
 
@@ -1889,7 +1889,7 @@ public final class ErrorCode {
     public static final int ER_VIEW_CHECK_FAILED = 1369;
 
     /**
-     * %-.16s command denied to user '%-.48s'@'%-.64s' for routine '%-.192s'
+     * %-.16s request denied to user '%-.48s'@'%-.64s' for routine '%-.192s'
      */
     public static final int ER_PROCACCESS_DENIED_ERROR = 1370;
 
@@ -2029,12 +2029,12 @@ public final class ErrorCode {
     public static final int ER_XAER_NOTA = 1397;
 
     /**
-     * XAER_INVAL: Invalid arguments (or unsupported command)
+     * XAER_INVAL: Invalid arguments (or unsupported request)
      */
     public static final int ER_XAER_INVAL = 1398;
 
     /**
-     * XAER_RMFAIL: The command cannot be executed when global transaction is in the  %.64s state
+     * XAER_RMFAIL: The request cannot be executed when global transaction is in the  %.64s state
      */
     public static final int ER_XAER_RMFAIL = 1399;
 
@@ -2640,7 +2640,7 @@ public final class ErrorCode {
     public static final int ER_SAME_NAME_PARTITION = 1517;
 
     /**
-     * It is not allowed to shut off binlog on this command
+     * It is not allowed to shut off binlog on this request
      */
     public static final int ER_NO_BINLOG_ERROR = 1518;
 
@@ -2989,7 +2989,7 @@ public final class ErrorCode {
     public static final int ER_DUP_ENTRY_WITH_KEY_NAME = 1586;
 
     /**
-     * Too many files opened, please execute the command again
+     * Too many files opened, please execute the request again
      */
     public static final int ER_BINLOG_PURGE_EMFILE = 1587;
 
@@ -3041,7 +3041,7 @@ public final class ErrorCode {
     public static final int ER_SLAVE_CREATE_EVENT_FAILURE = 1596;
 
     /**
-     * Master command %s failed: %s
+     * Master request %s failed: %s
      */
     public static final int ER_SLAVE_MASTER_COM_FAILURE = 1597;
 
@@ -4486,13 +4486,13 @@ public final class ErrorCode {
     public static final int ER_INNODB_READ_ONLY = 1874;
 
     /**
-     * STOP SLAVE command execution is incomplete: Slave SQL thread got the stop signal, thread is busy, SQL thread
+     * STOP SLAVE request execution is incomplete: Slave SQL thread got the stop signal, thread is busy, SQL thread
      * will stop once the current task is complete.
      */
     public static final int ER_STOP_SLAVE_SQL_THREAD_TIMEOUT = 1875;
 
     /**
-     * STOP SLAVE command execution is incomplete: Slave IO thread got the stop signal, thread is busy, IO thread
+     * STOP SLAVE request execution is incomplete: Slave IO thread got the stop signal, thread is busy, IO thread
      * will stop once the current task is complete.
      */
     public static final int ER_STOP_SLAVE_IO_THREAD_TIMEOUT = 1876;

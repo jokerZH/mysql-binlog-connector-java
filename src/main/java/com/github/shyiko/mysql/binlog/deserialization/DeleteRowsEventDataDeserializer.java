@@ -26,9 +26,7 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 
-/**
- * @author <a href="mailto:stanley.shyiko@gmail.com">Stanley Shyiko</a>
- */
+/* 解析delete事件 */
 public class DeleteRowsEventDataDeserializer extends AbstractRowsEventDataDeserializer<DeleteRowsEventData> {
     private boolean mayContainExtraInformation;
 
@@ -44,11 +42,11 @@ public class DeleteRowsEventDataDeserializer extends AbstractRowsEventDataDeseri
     @Override
     public DeleteRowsEventData deserialize(ByteArrayInputStream inputStream) throws IOException {
         DeleteRowsEventData eventData = new DeleteRowsEventData();
-        eventData.setTableId(inputStream.readLong(6));  // tableId  6 byte
-        inputStream.readInteger(2);                     // reserved 2 byte
+        eventData.setTableId(inputStream.readLong(6));          // tableId  6 byte
+        inputStream.readInteger(2);                             // reserved 2 byte
         if (mayContainExtraInformation) {
             int extraInfoLength = inputStream.readInteger(2);   // extraLen     2 byte
-            inputStream.skip(extraInfoLength - 2);                  // extraInfo    extraLen-2 byte
+            inputStream.skip(extraInfoLength - 2);              // extraInfo    extraLen-2 byte
         }
         int numberOfColumns = inputStream.readPackedInteger();
         eventData.setIncludedColumns(inputStream.readBitSet(numberOfColumns, true));

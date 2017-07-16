@@ -13,25 +13,19 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package com.github.shyiko.mysql.binlog.network.protocol.command;
+package com.github.shyiko.mysql.binlog.network.protocol.request;
 
 import com.github.shyiko.mysql.binlog.io.ByteArrayOutputStream;
 import com.github.shyiko.mysql.binlog.network.ClientCapabilities;
 
 import java.io.IOException;
 
-/**
- * @author <a href="mailto:stanley.shyiko@gmail.com">Stanley Shyiko</a>
- */
+/* TODO */
 public class SSLRequestCommand implements Command {
-
     private int clientCapabilities;
     private int collation;
 
-    public void setClientCapabilities(int clientCapabilities) {
-        this.clientCapabilities = clientCapabilities;
-    }
-
+    public void setClientCapabilities(int clientCapabilities) { this.clientCapabilities = clientCapabilities; }
     public void setCollation(int collation) {
         this.collation = collation;
     }
@@ -42,8 +36,10 @@ public class SSLRequestCommand implements Command {
         int clientCapabilities = this.clientCapabilities;
         if (clientCapabilities == 0) {
             clientCapabilities = ClientCapabilities.LONG_FLAG |
-                ClientCapabilities.PROTOCOL_41 | ClientCapabilities.SECURE_CONNECTION;
+                                 ClientCapabilities.PROTOCOL_41 |
+                                 ClientCapabilities.SECURE_CONNECTION;
         }
+
         clientCapabilities |= ClientCapabilities.SSL;
         buffer.writeInteger(clientCapabilities, 4);
         buffer.writeInteger(0, 4); // maximum packet length

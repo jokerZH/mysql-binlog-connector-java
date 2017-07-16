@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package com.github.shyiko.mysql.binlog.network.protocol.command;
+package com.github.shyiko.mysql.binlog.network.protocol.request;
 
 import com.github.shyiko.mysql.binlog.GtidSet;
 import com.github.shyiko.mysql.binlog.io.ByteArrayOutputStream;
@@ -21,9 +21,7 @@ import com.github.shyiko.mysql.binlog.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.util.Collection;
 
-/**
- * @author <a href="mailto:stanley.shyiko@gmail.com">Stanley Shyiko</a>
- */
+/* TODO */
 public class DumpBinaryLogGtidCommand implements Command {
 
     private long serverId;

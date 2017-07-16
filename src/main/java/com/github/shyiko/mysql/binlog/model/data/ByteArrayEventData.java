@@ -17,9 +17,7 @@ package com.github.shyiko.mysql.binlog.model.data;
 
 import com.github.shyiko.mysql.binlog.model.event.EventData;
 
-/**
- * @author <a href="mailto:stanley.shyiko@gmail.com">Stanley Shyiko</a>
- */
+/* 解析byte数组 */
 public class ByteArrayEventData implements EventData {
     private byte[] data;
 

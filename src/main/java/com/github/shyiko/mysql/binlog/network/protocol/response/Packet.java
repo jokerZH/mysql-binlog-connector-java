@@ -13,18 +13,9 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package com.github.shyiko.mysql.binlog.network;
+package com.github.shyiko.mysql.binlog.network.protocol.response;
 
-/**
- * @author <a href="mailto:stanley.shyiko@gmail.com">Stanley Shyiko</a>
- */
-public class AuthenticationException extends ServerException {
-
-    public AuthenticationException(String message, int errorCode, String sqlState) {
-        super(message, errorCode, sqlState);
-    }
-
-    public AuthenticationException(String message) {
-        super(message, 0, "HY000");
-    }
+public interface Packet {
+    // https://dev.mysql.com/doc/internals/en/sending-more-than-16mbyte.html
+    int MAX_LENGTH = 16777215;
 }

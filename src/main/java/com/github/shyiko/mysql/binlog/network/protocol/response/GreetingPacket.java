@@ -13,17 +13,14 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package com.github.shyiko.mysql.binlog.network.protocol;
+package com.github.shyiko.mysql.binlog.network.protocol.response;
 
 import com.github.shyiko.mysql.binlog.io.ByteArrayInputStream;
 
 import java.io.IOException;
 
-/**
- * @author <a href="mailto:stanley.shyiko@gmail.com">Stanley Shyiko</a>
- */
+/* 连接建立后 服务端发起的数据包 */
 public class GreetingPacket implements Packet {
-
     private int protocolVersion;
     private String serverVersion;
     private long threadId;
@@ -49,36 +46,12 @@ public class GreetingPacket implements Packet {
         }
     }
 
-    public int getProtocolVersion() {
-        return protocolVersion;
-    }
-
-    public String getServerVersion() {
-        return serverVersion;
-    }
-
-    public String getScramble() {
-        return scramble;
-    }
-
-    public long getThreadId() {
-        return threadId;
-    }
-
-    public int getServerStatus() {
-        return serverStatus;
-    }
-
-    public int getServerCapabilities() {
-        return serverCapabilities;
-    }
-
-    public String getPluginProvidedData() {
-        return pluginProvidedData;
-    }
-
-    public int getServerCollation() {
-        return serverCollation;
-    }
-
+    public int getProtocolVersion() { return protocolVersion; }
+    public String getServerVersion() { return serverVersion; }
+    public String getScramble() { return scramble; }
+    public long getThreadId() { return threadId; }
+    public int getServerStatus() { return serverStatus; }
+    public int getServerCapabilities() { return serverCapabilities; }
+    public String getPluginProvidedData() { return pluginProvidedData; }
+    public int getServerCollation() { return serverCollation; }
 }

@@ -15,7 +15,6 @@
  */
 package com.github.shyiko.mysql.binlog.model.data;
 
-import com.github.shyiko.mysql.binlog.deserialization.AbstractRowsEventDataDeserializer;
 import com.github.shyiko.mysql.binlog.model.event.EventData;
 
 import java.io.Serializable;
@@ -24,50 +23,20 @@ import java.util.BitSet;
 import java.util.List;
 import java.util.Map;
 
-/**
- * @author <a href="mailto:stanley.shyiko@gmail.com">Stanley Shyiko</a>
- */
 public class UpdateRowsEventData implements EventData {
-
     private long tableId;
     private BitSet includedColumnsBeforeUpdate;
     private BitSet includedColumns;
-    /**
-     * @see AbstractRowsEventDataDeserializer
-     */
-    private List<Map.Entry<Serializable[], Serializable[]>> rows;
+    private List<Map.Entry<Serializable[]/*before行*/, Serializable[]/*after行*/>> rows;
 
-    public long getTableId() {
-        return tableId;
-    }
-
-    public void setTableId(long tableId) {
-        this.tableId = tableId;
-    }
-
-    public BitSet getIncludedColumnsBeforeUpdate() {
-        return includedColumnsBeforeUpdate;
-    }
-
-    public void setIncludedColumnsBeforeUpdate(BitSet includedColumnsBeforeUpdate) {
-        this.includedColumnsBeforeUpdate = includedColumnsBeforeUpdate;
-    }
-
-    public BitSet getIncludedColumns() {
-        return includedColumns;
-    }
-
-    public void setIncludedColumns(BitSet includedColumns) {
-        this.includedColumns = includedColumns;
-    }
-
-    public List<Map.Entry<Serializable[], Serializable[]>> getRows() {
-        return rows;
-    }
-
-    public void setRows(List<Map.Entry<Serializable[], Serializable[]>> rows) {
-        this.rows = rows;
-    }
+    public long getTableId() { return tableId; }
+    public void setTableId(long tableId) { this.tableId = tableId; }
+    public BitSet getIncludedColumnsBeforeUpdate() { return includedColumnsBeforeUpdate; }
+    public void setIncludedColumnsBeforeUpdate(BitSet includedColumnsBeforeUpdate) { this.includedColumnsBeforeUpdate = includedColumnsBeforeUpdate; }
+    public BitSet getIncludedColumns() { return includedColumns; }
+    public void setIncludedColumns(BitSet includedColumns) { this.includedColumns = includedColumns; }
+    public List<Map.Entry<Serializable[], Serializable[]>> getRows() { return rows; }
+    public void setRows(List<Map.Entry<Serializable[], Serializable[]>> rows) { this.rows = rows; }
 
     @Override
     public String toString() {

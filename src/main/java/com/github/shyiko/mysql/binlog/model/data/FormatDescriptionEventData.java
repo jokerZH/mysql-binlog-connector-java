@@ -17,38 +17,18 @@ package com.github.shyiko.mysql.binlog.model.data;
 
 import com.github.shyiko.mysql.binlog.model.event.EventData;
 
-/**
- * @author <a href="mailto:stanley.shyiko@gmail.com">Stanley Shyiko</a>
- */
+/* TODO */
 public class FormatDescriptionEventData implements EventData {
-
     private int binlogVersion;
     private String serverVersion;
     private int headerLength;
 
-    public int getBinlogVersion() {
-        return binlogVersion;
-    }
-
-    public void setBinlogVersion(int binlogVersion) {
-        this.binlogVersion = binlogVersion;
-    }
-
-    public String getServerVersion() {
-        return serverVersion;
-    }
-
-    public void setServerVersion(String serverVersion) {
-        this.serverVersion = serverVersion;
-    }
-
-    public int getHeaderLength() {
-        return headerLength;
-    }
-
-    public void setHeaderLength(int headerLength) {
-        this.headerLength = headerLength;
-    }
+    public int getBinlogVersion() { return binlogVersion; }
+    public void setBinlogVersion(int binlogVersion) { this.binlogVersion = binlogVersion; }
+    public String getServerVersion() { return serverVersion; }
+    public void setServerVersion(String serverVersion) { this.serverVersion = serverVersion; }
+    public int getHeaderLength() { return headerLength; }
+    public void setHeaderLength(int headerLength) { this.headerLength = headerLength; }
 
     @Override
     public String toString() {

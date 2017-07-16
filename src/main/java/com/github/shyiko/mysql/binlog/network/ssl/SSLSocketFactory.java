@@ -13,17 +13,12 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package com.github.shyiko.mysql.binlog.network;
+package com.github.shyiko.mysql.binlog.network.ssl;
 
-import javax.net.ssl.SSLException;
+import javax.net.ssl.SSLSocket;
+import java.net.Socket;
+import java.net.SocketException;
 
-/**
- * @author <a href="mailto:stanley.shyiko@gmail.com">Stanley Shyiko</a>
- */
-public class IdentityVerificationException extends SSLException {
-
-    public IdentityVerificationException(String message) {
-        super(message);
-    }
-
+public interface SSLSocketFactory {
+    SSLSocket createSocket(Socket socket) throws SocketException;
 }

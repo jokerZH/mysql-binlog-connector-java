@@ -21,7 +21,6 @@ package com.github.shyiko.mysql.binlog.network;
  *      Capability Flags</a>
  */
 public final class ClientCapabilities {
-
     public static final int LONG_PASSWORD = 1; /* new more secure passwords */
     public static final int FOUND_ROWS = 1 << 1; /* found instead of affected rows */
     public static final int LONG_FLAG = 1 << 2; /* get all column flags */
@@ -45,6 +44,5 @@ public final class ClientCapabilities {
     public static final int SSL_VERIFY_SERVER_CERT = 1 << 30;
     public static final int REMEMBER_OPTIONS = 1 << 31;
 
-    private ClientCapabilities() {
-    }
+    private ClientCapabilities() { }
 }

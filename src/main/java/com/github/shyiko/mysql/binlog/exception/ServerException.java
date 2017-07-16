@@ -13,15 +13,13 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package com.github.shyiko.mysql.binlog.network;
+package com.github.shyiko.mysql.binlog.exception;
+
+import com.github.shyiko.mysql.binlog.network.ErrorCode;
 
 import java.io.IOException;
 
-/**
- * @author <a href="mailto:stanley.shyiko@gmail.com">Stanley Shyiko</a>
- */
 public class ServerException extends IOException {
-
     private int errorCode;
     private String sqlState;
 
@@ -31,14 +29,6 @@ public class ServerException extends IOException {
         this.sqlState = sqlState;
     }
 
-    /**
-     * @see ErrorCode
-     */
-    public int getErrorCode() {
-        return errorCode;
-    }
-
-    public String getSqlState() {
-        return sqlState;
-    }
+    public int getErrorCode() { return errorCode; }
+    public String getSqlState() { return sqlState; }
 }

@@ -13,17 +13,14 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package com.github.shyiko.mysql.binlog.network.protocol;
+package com.github.shyiko.mysql.binlog.network.protocol.response;
 
 import com.github.shyiko.mysql.binlog.io.ByteArrayInputStream;
 
 import java.io.IOException;
 
-/**
- * @author <a href="mailto:stanley.shyiko@gmail.com">Stanley Shyiko</a>
- */
+/* 返货的错误信息 */
 public class ErrorPacket implements Packet {
-
     private int errorCode;
     private String sqlState;
     private String errorMessage;
@@ -38,15 +35,7 @@ public class ErrorPacket implements Packet {
         this.errorMessage = buffer.readString(buffer.available());
     }
 
-    public int getErrorCode() {
-        return errorCode;
-    }
-
-    public String getSqlState() {
-        return sqlState;
-    }
-
-    public String getErrorMessage() {
-        return errorMessage;
-    }
+    public int getErrorCode() { return errorCode; }
+    public String getSqlState() { return sqlState; }
+    public String getErrorMessage() { return errorMessage; }
 }

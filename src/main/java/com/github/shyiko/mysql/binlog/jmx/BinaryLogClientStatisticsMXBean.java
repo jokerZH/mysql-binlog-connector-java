@@ -19,7 +19,6 @@ package com.github.shyiko.mysql.binlog.jmx;
  * @author <a href="mailto:stanley.shyiko@gmail.com">Stanley Shyiko</a>
  */
 public interface BinaryLogClientStatisticsMXBean {
-
     String getLastEvent();
     long getSecondsSinceLastEvent();
     long getSecondsBehindMaster();
